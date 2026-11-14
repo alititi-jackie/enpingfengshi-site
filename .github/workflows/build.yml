@@ -1,0 +1,57 @@
+name: Build and deploy site
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install tools
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq poppler-utils > /dev/null
+          pip install --quiet pillow
+
+      - name: Download book PDF from Release
+        run: |
+          curl -sL -o book.pdf "https://github.com/alititi-jackie/enpingfengshi-site/releases/download/b-20261114/1996.pdf"
+          ls -la book.pdf
+
+      - name: Render pages to WebP (200 DPI)
+        run: |
+          mkdir -p work site/pages
+          pdftoppm -r 200 -png book.pdf work/pg
+          python3 - << 'PYEOF'
+          from PIL import Image
+          import glob, os
+          files = sorted(glob.glob('work/pg-*.png'))
+          print('pages:', len(files))
+          for i, f in enumerate(files, 1):
+              im = Image.open(f)
+              im.save(f'site/pages/p{i:04d}.webp', 'WEBP', quality=80)
+              os.remove(f)
+          PYEOF
+          du -sh site/pages
+
+      - name: Generate site
+        run: python3 scripts/generate.py
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: site
+
+      - uses: actions/deploy-pages@v4
