@@ -138,7 +138,7 @@ def build(data):
 <h1>恩平冯氏族谱</h1><div class="sub">寻 根 溯 源 · 世 系 传 承</div>
 <div class="searchbox"><input id="q" type="text" placeholder="输入房名、支系、村名，或书页码" autocomplete="off">
 <button id="go">查 找</button></div><div id="searchResults"></div>
-<div class="btnrow"><a class="btn" href="/reader.html?p=31">从第一页开始看</a>
+<div class="btnrow"><a class="btn" href="/reader.html?p=1">从第一页开始看</a>
 <a class="btn ghost" href="/toc.html">看全书目录</a></div></div>
 <div class="wrap">
 <section class="block"><h2>三大宗系</h2><div class="cards">{zu_cards}</div></section>
