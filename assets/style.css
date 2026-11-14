@@ -9,12 +9,18 @@ body{margin:0;background:var(--cream);color:var(--ink);
 a{color:var(--red);text-decoration:none}
 a:active{opacity:.7}
 .wrap{max-width:860px;margin:0 auto;padding:0 16px}
-header.site{background:var(--paper);border-bottom:2px solid var(--red)}
-header.site .wrap{display:flex;align-items:center;gap:10px;padding:10px 16px}
-header.site img.logo{width:40px;height:40px;border-radius:9px}
-header.site .t{font-size:19px;font-weight:700;color:var(--red);letter-spacing:.06em}
-header.site nav{margin-left:auto;display:flex;gap:14px;font-size:14px;white-space:nowrap}
-header.site nav a{color:var(--ink)}
+.brandbar{padding:24px 0 14px}
+.brandbar .brand{display:flex;gap:13px;align-items:center;text-decoration:none;color:var(--red)}
+.brandbar .brand img{width:46px;height:46px;border-radius:10px;display:block}
+.brandbar .brand span{font-size:22px;font-weight:700;letter-spacing:.04em;line-height:1.3}
+.brandbar .brand small{display:block;font-size:12.5px;font-weight:400;color:var(--muted);letter-spacing:1px}
+.mainnav{position:sticky;top:0;z-index:50;background:var(--cream);border-bottom:1px solid var(--line)}
+.mainnav-in{display:flex;gap:26px;align-items:center;height:48px;overflow-x:auto;scrollbar-width:none}
+.mainnav-in::-webkit-scrollbar{display:none}
+.mainnav a{color:var(--ink);text-decoration:none;white-space:nowrap;padding:4px 1px}
+.mainnav a.on{color:var(--red);font-weight:700;box-shadow:inset 0 -2px 0 var(--red)}
+.mainnav button.share{background:none;border:0;font:inherit;color:var(--red);cursor:pointer;padding:4px 1px;white-space:nowrap}
+@media(max-width:650px){.brandbar{padding:16px 0 10px}.mainnav-in{gap:19px;height:44px;font-size:15.5px}}
 .hero{text-align:center;padding:34px 16px 8px}
 .hero img.logo{width:84px;height:84px;border-radius:18px}
 .hero h1{margin:12px 0 2px;font-size:30px;color:var(--red);letter-spacing:.12em}
@@ -48,8 +54,8 @@ section.block h2{font-size:20px;color:var(--red);border-left:4px solid var(--red
 footer.site{border-top:1px solid var(--line);margin-top:36px;padding:18px 16px 30px;
   text-align:center;color:var(--muted);font-size:13px}
 /* reader */
-.readerbar{position:sticky;top:0;background:var(--paper);border-bottom:1px solid var(--line);
-  padding:8px 12px;display:flex;gap:8px;align-items:center;z-index:5;flex-wrap:wrap}
+.readerbar{background:var(--paper);border-bottom:1px solid var(--line);
+  padding:8px 12px;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
 .readerbar .info{font-size:14px;color:var(--ink)}
 .readerbar .info b{color:var(--red)}
 .readerbar input{width:76px;padding:7px 8px;font-size:15px;border:1px solid var(--line);
@@ -67,11 +73,8 @@ footer.site{border-top:1px solid var(--line);margin-top:36px;padding:18px 16px 3
 .kv{background:var(--paper);border:1px solid var(--line);border-radius:10px;padding:14px 16px}
 .kv div{margin:3px 0}
 .kv .k{color:var(--muted);font-size:13px;margin-right:8px}
-/* nav sticky/highlight/share, floating buttons, toc & villages fixes (2026-11-14) */
-header.site{position:sticky;top:0;z-index:50}
-header.site nav a.on{color:var(--red);font-weight:700;border-bottom:2px solid var(--red)}
-header.site nav button.share{background:none;border:0;font:inherit;color:var(--ink);cursor:pointer;padding:0}
-@media(max-width:600px){header.site nav{gap:10px;font-size:13.5px}header.site .t{font-size:17px}}
+/* floating buttons, toc & villages fixes, footer main-site link (2026-11-14) */
+footer.site .foot-main{display:inline-block;margin-top:8px;color:var(--red);font-weight:700;letter-spacing:.5px}
 .fab{position:fixed;right:14px;bottom:20px;display:flex;flex-direction:column;gap:10px;z-index:60}
 .fab button{width:44px;height:44px;border-radius:50%;border:1px solid #d8cfc0;
   background:rgba(255,255,255,.94);color:var(--red);font-size:19px;line-height:1;

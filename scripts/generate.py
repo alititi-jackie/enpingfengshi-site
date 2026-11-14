@@ -51,12 +51,14 @@ def header(active=''):
         cls = ' class="on"' if k == active else ''
         parts.append(f'<a href="{u}"{cls}>{t}</a>')
     nav = ''.join(parts) + '<button class="share" type="button" onclick="sharePage()">分享</button>'
-    return f'''<header class="site"><div class="wrap">
-<a href="/"><img class="logo" src="/assets/icon.svg" alt="冯"></a>
-<a class="t" href="/">恩平冯氏族谱</a><nav>{nav}</nav></div></header>'''
+    return f'''<header class="brandbar"><div class="wrap">
+<a class="brand" href="/"><img src="/assets/icon.svg" alt="冯" width="46" height="46"><span>恩平冯氏族谱<small>enping.fengshizupu.com</small></span></a>
+</div></header>
+<nav class="mainnav"><div class="wrap mainnav-in">{nav}</div></nav>'''
 
 FOOT = '''<footer class="site">恩平冯氏族谱 · 在线查阅<br>
-<span>本站内容依《恩平冯氏族谱》原书制作，供宗亲查阅。</span></footer>
+<span>本站内容依《恩平冯氏族谱》原书制作，供宗亲查阅。</span><br>
+<a class="foot-main" href="https://fengshizupu.com" target="_blank" rel="noopener">fengshizupu.com</a></footer>
 </body></html>'''
 
 FAB = '''<div class="fab"><button id="fabTop" type="button" title="回到顶部" aria-label="回到顶部">↑</button><button id="fabBack" type="button" title="返回" aria-label="返回" onclick="history.back()">←</button></div>
@@ -305,7 +307,7 @@ document.addEventListener('keydown', e => {{
   if(e.key==='ArrowRight' && p<TOTAL){{ p++; sync(); }} }});
 render();
 </script>'''
-    w('reader.html', head('看原书｜恩平冯氏族谱') + body + FAB + '</body></html>')
+    w('reader.html', head('看原书｜恩平冯氏族谱') + header('toc') + body + FAB + '</body></html>')
 
     # ---------- 404 ----------
     w('404.html', page('没有这一页', '<div class="wrap"><section class="block"><h2>没有这一页</h2><p>回到<a href="/">首页</a>重新查找。</p></section></div>'))
