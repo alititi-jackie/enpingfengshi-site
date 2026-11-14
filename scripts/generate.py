@@ -323,10 +323,9 @@ function render(){{
   img.src = '/pages/p' + String(p).padStart(4,'0') + '.webp';
   img.alt = '《恩平冯氏族谱》' + label(p);
   document.getElementById('info').innerHTML = '<b>' + label(p) + '</b>（全书图第' + p + '页）';
-  let b = null;
-  for (const x of BR) {{ if (p>=x.from && p<=x.to && (!b || x.from>=b.from)) b = x; }}
-  document.getElementById('branchInfo').innerHTML = b ?
-    '所属支系：<a href="/branch/' + b.id + '.html"><b>' + b.t + '</b></a>' : '';
+  const bs = BR.filter(x => p>=x.from && p<=x.to);
+  document.getElementById('branchInfo').innerHTML = bs.length ?
+    '所属支系：' + bs.map(x => '<a href="/branch/' + x.id + '.html"><b>' + x.t + '</b></a>').join('、') : '';
   const pv = document.getElementById('prev'), nx = document.getElementById('next');
   pv.className = p<=1 ? 'off' : ''; nx.className = p>=TOTAL ? 'off' : '';
   pv.onclick = e => {{ e.preventDefault(); if(p>1){{ p--; sync(); }} }};
