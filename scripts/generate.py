@@ -182,25 +182,51 @@ q.addEventListener('keydown', e => {{ if(e.key === 'Enter') run(); }});
                          '《恩平冯氏族谱》在线查阅：按目录、房支、村庄查找，或输入书页码直接翻到原书那一页。', 'home'))
 
     # ---------- toc ----------
-    rows = []
-    for e in all_entries:
-        lvl = e.get('lvl', 3)
+    def target_of(e):
         if e.get('pdf'):
-            pg = f'<span class="pg">{label_for_pdf(e["pdf"])}</span>'
-            rows.append(f'<a href="/reader.html?p={e["pdf"]}"><span>{esc(e["t"])}</span>{pg}</a>')
-        elif e.get('p'):
-            pg = f'<span class="pg">书第{e["p"]}页</span>'
-            if lvl <= 1:
-                rows.append(f'<a class="grp" href="/reader.html?p={e["p"] + BOOK_OFFSET}"><span>{esc(e["t"])}</span>{pg}</a>')
-            else:
-                rows.append(f'<a href="/reader.html?p={e["p"] + BOOK_OFFSET}"><span>{esc(e["t"])}</span>{pg}</a>')
-        elif lvl <= 1:
-            rows.append(f'<div class="grp">{esc(e["t"])}</div>')
+            return e['pdf'], label_for_pdf(e['pdf'])
+        if e.get('p'):
+            return e['p'] + BOOK_OFFSET, f'书第{e["p"]}页'
+        return None
+    raw_targets = [target_of(e) for e in all_entries]
+    nexts = [None] * len(all_entries)
+    nt = None
+    for i in range(len(all_entries) - 1, -1, -1):
+        nexts[i] = nt
+        if raw_targets[i]:
+            nt = raw_targets[i]
+    rows = []
+    prev_t = None
+    for i, e in enumerate(all_entries):
+        lvl = e.get('lvl', 3)
+        t = raw_targets[i]
+        if t is None:
+            t = nexts[i] if lvl <= 1 else prev_t
+        if raw_targets[i]:
+            prev_t = raw_targets[i]
+        href, lab = t
+        q = esc(e['t'] + ' ' + lab)
+        pg = f'<span class="pg">{lab}</span>'
+        if lvl <= 1:
+            rows.append(f'<a class="grp" data-q="{q}" href="/reader.html?p={href}"><span>{esc(e["t"])}</span>{pg}</a>')
+        elif raw_targets[i]:
+            rows.append(f'<a data-q="{q}" href="/reader.html?p={href}"><span>{esc(e["t"])}</span>{pg}</a>')
         else:
-            rows.append(f'<div class="note-row">{esc(e["t"])}</div>')
-    body = f'<div class="wrap"><section class="block"><h2>全书目录</h2>' \
-           f'<p class="note">依原书目录逐条录入。点任意一条，直接翻到原书那一页。</p>' \
-           f'<div class="list">{"".join(rows)}</div></section></div>'
+            rows.append(f'<a class="note-link" data-q="{q}" href="/reader.html?p={href}"><span>{esc(e["t"])}</span>{pg}</a>')
+    body = f'''<div class="wrap"><section class="block"><h2>全书目录</h2>
+<p class="note">依原书目录逐条录入。点任意一条，直接翻到原书那一页。</p>
+<div class="vsearch"><input id="tq" type="text" placeholder="输入条目、村名或页码，如：凝斋、莲塘、192" autocomplete="off"><div class="vcount" id="tcount"></div></div>
+<div class="list" id="toclist">{"".join(rows)}</div></section></div>
+<script>
+var tq = document.getElementById('tq'), tc = document.getElementById('tcount');
+var trows = Array.prototype.slice.call(document.getElementById('toclist').children);
+tq.addEventListener('input', function(){{
+  var s = tq.value.trim(), n = 0;
+  trows.forEach(function(x){{ var show = !s || x.getAttribute('data-q').indexOf(s) >= 0;
+    x.style.display = show ? '' : 'none'; if (show) n++; }});
+  tc.textContent = s ? ('找到 ' + n + ' 条') : '';
+}});
+</script>'''
     w('toc.html', page('全书目录｜恩平冯氏族谱', body, '', 'toc'))
 
     # ---------- branch pages ----------

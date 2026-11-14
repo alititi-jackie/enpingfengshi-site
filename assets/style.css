@@ -84,6 +84,9 @@ footer.site .foot-main{display:inline-block;margin-top:8px;color:var(--red);font
 .list a.grp{font-weight:700;color:var(--red);background:none;border:0;border-radius:0;
   padding:2px;margin:18px 0 4px}
 .note-row{padding:8px 2px;color:#97866c;font-size:14px;border-bottom:1px dashed #e7dfcf}
+.list a.note-link{background:transparent;border:0;border-bottom:1px dashed #e7dfcf;border-radius:0;
+  padding:8px 2px;margin-top:0;color:#97866c;font-size:14px}
+.list a.note-link .pg{color:var(--red);opacity:.7}
 .vsearch{margin:14px 0 4px}
 .vsearch input{width:100%;padding:11px 14px;font-size:16px;border:1.5px solid var(--red);
   border-radius:10px;background:#fff;font-family:inherit}
