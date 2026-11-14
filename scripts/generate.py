@@ -26,6 +26,8 @@ def label_for_pdf(n):
         return f'卷首第{n}页'
     if n <= 30:
         return f'目录第{n-17}页'
+    if n <= 43:
+        return f'目录第{n-30}页'
     if n <= BOOK_MAX + BOOK_OFFSET:
         return f'书第{n-BOOK_OFFSET}页'
     return '封底'
@@ -312,6 +314,7 @@ vq.addEventListener('input', function(){{
 const TOTAL = {TOTAL_PDF}, OFF = {BOOK_OFFSET}, BMAX = {BOOK_MAX};
 const BR = {json.dumps(branch_js, ensure_ascii=False)};
 function label(n){{ if(n<=17) return '卷首第'+n+'页'; if(n<=30) return '目录第'+(n-17)+'页';
+  if(n<=43) return '目录第'+(n-30)+'页';
   if(n<=BMAX+OFF) return '书第'+(n-OFF)+'页'; return '封底'; }}
 let p = parseInt(new URLSearchParams(location.search).get('p') || '31');
 if(!(p>=1 && p<=TOTAL)) p = 31;
