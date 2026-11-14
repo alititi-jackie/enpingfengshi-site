@@ -23,7 +23,7 @@ jobs:
       - name: Install tools
         run: |
           sudo apt-get update -qq
-          sudo apt-get install -y -qq poppler-utils > /dev/null
+          sudo apt-get install -y -qq poppler-utils fonts-noto-cjk > /dev/null
           pip install --quiet pillow
 
       - name: Download book PDF from Release
@@ -36,12 +36,16 @@ jobs:
           mkdir -p work site/pages
           pdftoppm -r 200 -png book.pdf work/pg
           python3 - << 'PYEOF'
-          from PIL import Image
+          from PIL import Image, ImageDraw, ImageFont
           import glob, os
           files = sorted(glob.glob('work/pg-*.png'))
           print('pages:', len(files))
+          font = ImageFont.truetype('/usr/share/fonts/opentype/noto/NotoSerifCJK-Bold.ttc', 30)
           for i, f in enumerate(files, 1):
-              im = Image.open(f)
+              im = Image.open(f).convert('RGB')
+              d = ImageDraw.Draw(im)
+              color = (255, 255, 255) if i == 1 else (116, 47, 50)
+              d.text((26, 16), '冯氏族谱 · fengshizupu.com', font=font, fill=color)
               im.save(f'site/pages/p{i:04d}.webp', 'WEBP', quality=80)
               os.remove(f)
           PYEOF
