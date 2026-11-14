@@ -116,16 +116,13 @@ def build(data):
     for b in branches:
         vs = branch_villages.get(b['id'], [])
         kw = ' '.join(vs)
-        if any('小滘' in v for v in vs):
-            kw += ' 小湴 小湴村'
+        if any('小湴' in v for v in vs):
+            kw += ' 小滘 小滘村'
         search_data.append({'t': b['t'], 'p': b['p'], 'kind': 'branch', 'id': b['id'],
                             'zu': b.get('zu', ''), 'fang': b.get('fang', ''), 'k': kw})
     for v, bs in villages.items():
-        kw = '小湴 小湴村' if '小滘' in v else ''
+        kw = '小滘 小滘村' if '小湴' in v else ''
         search_data.append({'t': v, 'p': bs[0]['p'], 'kind': 'village', 'k': kw})
-    if '良西镇小滘' in villages:
-        search_data.append({'t': '小湴村', 'p': villages['良西镇小滘'][0]['p'], 'kind': 'village',
-                            'a': '良西镇小滘', 'k': '小滘 小滘村'})
     zu_cards = ''
     for zu, desc in [('复春系', '九房 · 书第32–890页'), ('宁邦房', '一至二十世 · 书第891–977页'),
                      ('万辅祖', '一至十六世 · 书第978–1070页')]:
@@ -230,9 +227,9 @@ q.addEventListener('keydown', e => {{ if(e.key === 'Enter') run(); }});
             f'<a href="/branch/{b["id"]}.html"><span>{esc(b["t"])}</span><span class="pg">书第{b["p"]}页</span></a>'
             for b in bs)
         q = v + ' ' + ' '.join(b['t'] for b in bs)
-        if '小滘' in v:
-            q += ' 小湴 小湴村'
-        fresh = ' <a class="fresh" href="https://fengshizupu.com/archives/a000100/">最新资料</a>' if v == '良西镇小滘' else ''
+        if '小湴' in v:
+            q += ' 小滘 小滘村'
+        fresh = ' <a class="fresh" href="https://fengshizupu.com/archives/a000100/">最新资料</a>' if v == '良西镇小湴村' else ''
         secs.append(f'<div class="vsec" data-q="{esc(q)}"><div class="grp" id="{esc(v)}">{esc(v)}（{len(bs)} 个支系）{fresh}</div>{links}</div>')
     body = f'''<div class="wrap"><section class="block"><h2>村庄索引</h2>
 <p class="note">按原书世系目录标题中出现的村名整理：同一个村可能有多个房支，同一房支也可能分布在多个村。点村名看该村涉及的支系。</p>
