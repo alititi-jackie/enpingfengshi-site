@@ -164,7 +164,10 @@ const q = document.getElementById('q'), box = document.getElementById('searchRes
 function run(){{
   const s = q.value.trim(); box.innerHTML = '';
   if(!s) return;
-  if(/^\\d+$/.test(s)){{ const bp = parseInt(s); if(bp>=1 && bp<={BOOK_MAX}){{ location.href = '/reader.html?p=' + (bp + {BOOK_OFFSET}); return; }} }}
+  if(/^\\d+$/.test(s)){{ const bp = parseInt(s);
+    if(bp>=1 && bp<={BOOK_MAX}){{ box.innerHTML = '<a href="/reader.html?p=' + (bp + {BOOK_OFFSET}) + '">打开原书第 ' + bp + ' 页<span class="pg">书页直达 · 点这里翻过去</span></a>'; }}
+    else {{ box.innerHTML = '<a>书页码在 1–' + {BOOK_MAX} + ' 之间</a>'; }}
+    return; }}
   const hits = DATA.filter(d => (d.t + ' ' + (d.k || '')).includes(s)).slice(0, 12);
   if(!hits.length){{ box.innerHTML = '<a>没有找到，换个词试试，或去目录页翻找</a>'; return; }}
   box.innerHTML = hits.map(d => {{
@@ -178,7 +181,9 @@ function run(){{
 }}
 document.getElementById('go').onclick = run;
 q.addEventListener('input', run);
-q.addEventListener('keydown', e => {{ if(e.key === 'Enter') run(); }});
+q.addEventListener('keydown', e => {{ if(e.key === 'Enter'){{ const s = q.value.trim();
+  if(/^\\d+$/.test(s)){{ const bp = parseInt(s); if(bp>=1 && bp<={BOOK_MAX}){{ location.href = '/reader.html?p=' + (bp + {BOOK_OFFSET}); return; }} }}
+  run(); }} }});
 </script>'''
     w('index.html', page('恩平冯氏族谱｜在线查阅', body,
                          '《恩平冯氏族谱》在线查阅：按目录、房支、村庄查找，或输入书页码直接翻到原书那一页。', 'home'))
