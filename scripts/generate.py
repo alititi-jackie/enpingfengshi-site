@@ -45,7 +45,7 @@ def head(title, desc=''):
 
 def header(active=''):
     links = [('首页', '/', 'home'), ('目录', '/toc.html', 'toc'), ('村庄', '/villages.html', 'villages'),
-             ('主站', 'https://fengshizupu.com', 'main'), ('购买', '/buy.html', 'buy')]
+             ('购买', '/buy.html', 'buy'), ('主站', 'https://fengshizupu.com', 'main')]
     parts = []
     for t, u, k in links:
         cls = ' class="on"' if k == active else ''
