@@ -44,8 +44,13 @@ def head(title, desc=''):
 <body>'''
 
 def header(active=''):
-    links = [('首页', '/'), ('目录', '/toc.html'), ('村庄', '/villages.html'), ('购买', '/buy.html')]
-    nav = ''.join(f'<a href="{u}">{t}</a>' for t, u in links)
+    links = [('首页', '/', 'home'), ('目录', '/toc.html', 'toc'), ('村庄', '/villages.html', 'villages'),
+             ('主站', 'https://fengshizupu.com', 'main'), ('购买', '/buy.html', 'buy')]
+    parts = []
+    for t, u, k in links:
+        cls = ' class="on"' if k == active else ''
+        parts.append(f'<a href="{u}"{cls}>{t}</a>')
+    nav = ''.join(parts) + '<button class="share" type="button" onclick="sharePage()">分享</button>'
     return f'''<header class="site"><div class="wrap">
 <a href="/"><img class="logo" src="/assets/icon.svg" alt="冯"></a>
 <a class="t" href="/">恩平冯氏族谱</a><nav>{nav}</nav></div></header>'''
@@ -54,8 +59,19 @@ FOOT = '''<footer class="site">恩平冯氏族谱 · 在线查阅<br>
 <span>本站内容依《恩平冯氏族谱》原书制作，供宗亲查阅。</span></footer>
 </body></html>'''
 
-def page(title, body, desc=''):
-    return head(title, desc) + header() + body + FOOT
+FAB = '''<div class="fab"><button id="fabTop" type="button" title="回到顶部" aria-label="回到顶部">↑</button><button id="fabBack" type="button" title="返回" aria-label="返回" onclick="history.back()">←</button></div>
+<script>
+var ft = document.getElementById('fabTop');
+function fabShow(){ ft.classList.toggle('on', window.scrollY > 900); }
+window.addEventListener('scroll', fabShow, {passive: true}); fabShow();
+ft.onclick = function(){ window.scrollTo({top: 0, behavior: 'smooth'}); };
+function sharePage(){ var u = location.href, t = document.title;
+  if (navigator.share) { navigator.share({title: t, url: u}).catch(function(){}); }
+  else if (navigator.clipboard) { navigator.clipboard.writeText(u).then(function(){ alert('链接已复制'); }); } }
+</script>'''
+
+def page(title, body, desc='', active=''):
+    return head(title, desc) + header(active) + body + FAB + FOOT
 
 def load_data():
     with open(os.path.join(ROOT, 'data', 'toc.json'), encoding='utf-8') as f:
@@ -98,10 +114,18 @@ def build(data):
         if e.get('p'):
             search_data.append({'t': e['t'], 'p': e['p'], 'kind': 'toc'})
     for b in branches:
+        vs = branch_villages.get(b['id'], [])
+        kw = ' '.join(vs)
+        if any('小滘' in v for v in vs):
+            kw += ' 小湴 小湴村'
         search_data.append({'t': b['t'], 'p': b['p'], 'kind': 'branch', 'id': b['id'],
-                            'zu': b.get('zu', ''), 'fang': b.get('fang', '')})
+                            'zu': b.get('zu', ''), 'fang': b.get('fang', ''), 'k': kw})
     for v, bs in villages.items():
-        search_data.append({'t': v, 'p': bs[0]['p'], 'kind': 'village'})
+        kw = '小湴 小湴村' if '小滘' in v else ''
+        search_data.append({'t': v, 'p': bs[0]['p'], 'kind': 'village', 'k': kw})
+    if '良西镇小滘' in villages:
+        search_data.append({'t': '小湴村', 'p': villages['良西镇小滘'][0]['p'], 'kind': 'village',
+                            'a': '良西镇小滘', 'k': '小滘 小滘村'})
     zu_cards = ''
     for zu, desc in [('复春系', '九房 · 书第32–890页'), ('宁邦房', '一至二十世 · 书第891–977页'),
                      ('万辅祖', '一至十六世 · 书第978–1070页')]:
@@ -109,7 +133,7 @@ def build(data):
         href = f"/branch/{first['id']}.html" if first else '/toc.html'
         zu_cards += f'<a class="card" href="{href}"><div class="big">{zu}</div><div class="small">{desc}</div></a>'
     body = f'''
-<div class="hero"><img class="logo" src="/assets/icon.svg" alt="冯">
+<div class="hero">
 <h1>恩平冯氏族谱</h1><div class="sub">寻 根 溯 源 · 世 系 传 承</div>
 <div class="searchbox"><input id="q" type="text" placeholder="输入房名、支系、村名，或书页码" autocomplete="off">
 <button id="go">查 找</button></div><div id="searchResults"></div>
@@ -138,11 +162,11 @@ function run(){{
   const s = q.value.trim(); box.innerHTML = '';
   if(!s) return;
   if(/^\\d+$/.test(s)){{ const bp = parseInt(s); if(bp>=1 && bp<={BOOK_MAX}){{ location.href = '/reader.html?p=' + (bp + {BOOK_OFFSET}); return; }} }}
-  const hits = DATA.filter(d => d.t.includes(s)).slice(0, 12);
+  const hits = DATA.filter(d => (d.t + ' ' + (d.k || '')).includes(s)).slice(0, 12);
   if(!hits.length){{ box.innerHTML = '<a>没有找到，换个词试试，或去目录页翻找</a>'; return; }}
   box.innerHTML = hits.map(d => {{
     const href = d.kind === 'branch' ? '/branch/' + d.id + '.html' :
-                 d.kind === 'village' ? '/villages.html#' + encodeURIComponent(d.t) :
+                 d.kind === 'village' ? '/villages.html#' + encodeURIComponent(d.a || d.t) :
                  '/reader.html?p=' + (d.p + {BOOK_OFFSET});
     const tag = d.kind === 'branch' ? (d.zu + ' ' + d.fang) : (d.kind === 'village' ? '村庄' : '目录');
     return '<a href="' + href + '">' + d.t + '<span class="pg">' + tag + ' · 书第' + d.p + '页</span></a>';
@@ -153,22 +177,26 @@ q.addEventListener('input', run);
 q.addEventListener('keydown', e => {{ if(e.key === 'Enter') run(); }});
 </script>'''
     w('index.html', page('恩平冯氏族谱｜在线查阅', body,
-                         '《恩平冯氏族谱》在线查阅：按目录、房支、村庄查找，或输入书页码直接翻到原书那一页。'))
+                         '《恩平冯氏族谱》在线查阅：按目录、房支、村庄查找，或输入书页码直接翻到原书那一页。', 'home'))
 
     # ---------- toc ----------
     rows = []
     for e in all_entries:
         lvl = e.get('lvl', 3)
-        if lvl <= 1:
+        if e.get('p'):
+            pg = f'<span class="pg">书第{e["p"]}页</span>'
+            if lvl <= 1:
+                rows.append(f'<a class="grp" href="/reader.html?p={e["p"] + BOOK_OFFSET}"><span>{esc(e["t"])}</span>{pg}</a>')
+            else:
+                rows.append(f'<a href="/reader.html?p={e["p"] + BOOK_OFFSET}"><span>{esc(e["t"])}</span>{pg}</a>')
+        elif lvl <= 1:
             rows.append(f'<div class="grp">{esc(e["t"])}</div>')
         else:
-            pg = f'<span class="pg">书第{e["p"]}页</span>' if e.get('p') else ''
-            href = f'/reader.html?p={e["p"] + BOOK_OFFSET}' if e.get('p') else '#'
-            rows.append(f'<a href="{href}"><span>{esc(e["t"])}</span>{pg}</a>')
+            rows.append(f'<div class="note-row">{esc(e["t"])}</div>')
     body = f'<div class="wrap"><section class="block"><h2>全书目录</h2>' \
            f'<p class="note">依原书目录逐条录入。点任意一条，直接翻到原书那一页。</p>' \
            f'<div class="list">{"".join(rows)}</div></section></div>'
-    w('toc.html', page('全书目录｜恩平冯氏族谱', body))
+    w('toc.html', page('全书目录｜恩平冯氏族谱', body, '', 'toc'))
 
     # ---------- branch pages ----------
     for i, b in enumerate(branches):
@@ -193,7 +221,7 @@ q.addEventListener('keydown', e => {{ if(e.key === 'Enter') run(); }});
 <div class="btnrow"><a class="btn" href="/reader.html?p={b['p'] + BOOK_OFFSET}">从本支系第一页看起</a></div>
 <h2 style="font-size:17px">本支系各页</h2><div class="list">{page_links}</div>
 {nav}</section></div>'''
-        w(f'branch/{b["id"]}.html', page(f'{b["t"]}｜恩平冯氏族谱', body))
+        w(f'branch/{b["id"]}.html', page(f'{b["t"]}｜恩平冯氏族谱', body, '', 'toc'))
 
     # ---------- villages ----------
     secs = []
@@ -201,11 +229,26 @@ q.addEventListener('keydown', e => {{ if(e.key === 'Enter') run(); }});
         links = ''.join(
             f'<a href="/branch/{b["id"]}.html"><span>{esc(b["t"])}</span><span class="pg">书第{b["p"]}页</span></a>'
             for b in bs)
-        secs.append(f'<div class="grp" id="{esc(v)}">{esc(v)}（{len(bs)} 个支系）</div>{links}')
+        q = v + ' ' + ' '.join(b['t'] for b in bs)
+        if '小滘' in v:
+            q += ' 小湴 小湴村'
+        fresh = ' <a class="fresh" href="https://fengshizupu.com/archives/a000100/">最新资料</a>' if v == '良西镇小滘' else ''
+        secs.append(f'<div class="vsec" data-q="{esc(q)}"><div class="grp" id="{esc(v)}">{esc(v)}（{len(bs)} 个支系）{fresh}</div>{links}</div>')
     body = f'''<div class="wrap"><section class="block"><h2>村庄索引</h2>
 <p class="note">按原书世系目录标题中出现的村名整理：同一个村可能有多个房支，同一房支也可能分布在多个村。点村名看该村涉及的支系。</p>
-<div class="list">{"".join(secs)}</div></section></div>'''
-    w('villages.html', page('村庄索引｜恩平冯氏族谱', body))
+<div class="vsearch"><input id="vq" type="text" placeholder="输入村名或支系名，如：小湴、那龙、凝斋" autocomplete="off"><div class="vcount" id="vcount"></div></div>
+<div class="list">{"".join(secs)}</div></section></div>
+<script>
+var vq = document.getElementById('vq'), vc = document.getElementById('vcount');
+var vsecs = Array.prototype.slice.call(document.querySelectorAll('.vsec'));
+vq.addEventListener('input', function(){{
+  var s = vq.value.trim(), n = 0;
+  vsecs.forEach(function(x){{ var show = !s || x.getAttribute('data-q').indexOf(s) >= 0;
+    x.style.display = show ? '' : 'none'; if (show) n++; }});
+  vc.textContent = s ? ('找到 ' + n + ' 个村') : '';
+}});
+</script>'''
+    w('villages.html', page('村庄索引｜恩平冯氏族谱', body, '', 'villages'))
 
     # ---------- buy ----------
     body = '''<div class="wrap"><section class="block"><h2>购买《恩平冯氏族谱》</h2>
@@ -215,7 +258,7 @@ q.addEventListener('keydown', e => {{ if(e.key === 'Enter') run(); }});
 <div style="font-size:22px;color:#742f32;font-weight:700;margin:10px 0">微信：hola24</div>
 <div>加微信时请注明来意（例如：购买恩平冯氏族谱），以便通过。</div>
 </div></section></div>'''
-    w('buy.html', page('购买联系｜恩平冯氏族谱', body))
+    w('buy.html', page('购买联系｜恩平冯氏族谱', body, '', 'buy'))
 
     # ---------- reader ----------
     branch_js = [{'id': b['id'], 't': b['t'], 'zu': b.get('zu', ''), 'fang': b.get('fang', ''),
@@ -265,7 +308,7 @@ document.addEventListener('keydown', e => {{
   if(e.key==='ArrowRight' && p<TOTAL){{ p++; sync(); }} }});
 render();
 </script>'''
-    w('reader.html', head('看原书｜恩平冯氏族谱') + body + '</body></html>')
+    w('reader.html', head('看原书｜恩平冯氏族谱') + body + FAB + '</body></html>')
 
     # ---------- 404 ----------
     w('404.html', page('没有这一页', '<div class="wrap"><section class="block"><h2>没有这一页</h2><p>回到<a href="/">首页</a>重新查找。</p></section></div>'))

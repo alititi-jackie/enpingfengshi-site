@@ -67,3 +67,23 @@ footer.site{border-top:1px solid var(--line);margin-top:36px;padding:18px 16px 3
 .kv{background:var(--paper);border:1px solid var(--line);border-radius:10px;padding:14px 16px}
 .kv div{margin:3px 0}
 .kv .k{color:var(--muted);font-size:13px;margin-right:8px}
+/* nav sticky/highlight/share, floating buttons, toc & villages fixes (2026-11-14) */
+header.site{position:sticky;top:0;z-index:50}
+header.site nav a.on{color:var(--red);font-weight:700;border-bottom:2px solid var(--red)}
+header.site nav button.share{background:none;border:0;font:inherit;color:var(--ink);cursor:pointer;padding:0}
+@media(max-width:600px){header.site nav{gap:10px;font-size:13.5px}header.site .t{font-size:17px}}
+.fab{position:fixed;right:14px;bottom:20px;display:flex;flex-direction:column;gap:10px;z-index:60}
+.fab button{width:44px;height:44px;border-radius:50%;border:1px solid #d8cfc0;
+  background:rgba(255,255,255,.94);color:var(--red);font-size:19px;line-height:1;
+  box-shadow:0 2px 8px rgba(60,40,20,.18);cursor:pointer;font-family:inherit}
+#fabTop{display:none}
+#fabTop.on{display:block}
+.list a.grp{font-weight:700;color:var(--red);background:none;border:0;border-radius:0;
+  padding:2px;margin:18px 0 4px}
+.note-row{padding:8px 2px;color:#97866c;font-size:14px;border-bottom:1px dashed #e7dfcf}
+.vsearch{margin:14px 0 4px}
+.vsearch input{width:100%;padding:11px 14px;font-size:16px;border:1.5px solid var(--red);
+  border-radius:10px;background:#fff;font-family:inherit}
+.vcount{font-size:13px;color:var(--muted);margin-top:6px;min-height:18px}
+.list a.fresh{display:inline-block;background:var(--red);color:#fff;border:0;border-radius:999px;
+  padding:1px 10px;font-size:12.5px;font-weight:400;margin:0 0 0 6px;vertical-align:2px}
