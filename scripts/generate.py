@@ -115,6 +115,8 @@ def build(data):
     for e in all_entries:
         if e.get('p'):
             search_data.append({'t': e['t'], 'p': e['p'], 'kind': 'toc'})
+        elif e.get('pdf'):
+            search_data.append({'t': e['t'], 'pdf': e['pdf'], 'kind': 'toc'})
     for b in branches:
         vs = branch_villages.get(b['id'], [])
         kw = ' '.join(vs)
@@ -166,9 +168,10 @@ function run(){{
   box.innerHTML = hits.map(d => {{
     const href = d.kind === 'branch' ? '/branch/' + d.id + '.html' :
                  d.kind === 'village' ? '/villages.html#' + encodeURIComponent(d.a || d.t) :
-                 '/reader.html?p=' + (d.p + {BOOK_OFFSET});
+                 d.pdf ? '/reader.html?p=' + d.pdf : '/reader.html?p=' + (d.p + {BOOK_OFFSET});
     const tag = d.kind === 'branch' ? (d.zu + ' ' + d.fang) : (d.kind === 'village' ? '村庄' : '目录');
-    return '<a href="' + href + '">' + d.t + '<span class="pg">' + tag + ' · 书第' + d.p + '页</span></a>';
+    const pg = d.pdf ? '卷首' : '书第' + d.p + '页';
+    return '<a href="' + href + '">' + d.t + '<span class="pg">' + tag + ' · ' + pg + '</span></a>';
   }}).join('');
 }}
 document.getElementById('go').onclick = run;
@@ -182,7 +185,10 @@ q.addEventListener('keydown', e => {{ if(e.key === 'Enter') run(); }});
     rows = []
     for e in all_entries:
         lvl = e.get('lvl', 3)
-        if e.get('p'):
+        if e.get('pdf'):
+            pg = f'<span class="pg">{label_for_pdf(e["pdf"])}</span>'
+            rows.append(f'<a href="/reader.html?p={e["pdf"]}"><span>{esc(e["t"])}</span>{pg}</a>')
+        elif e.get('p'):
             pg = f'<span class="pg">书第{e["p"]}页</span>'
             if lvl <= 1:
                 rows.append(f'<a class="grp" href="/reader.html?p={e["p"] + BOOK_OFFSET}"><span>{esc(e["t"])}</span>{pg}</a>')
