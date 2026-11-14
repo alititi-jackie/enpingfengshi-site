@@ -229,7 +229,7 @@ q.addEventListener('keydown', e => {{ if(e.key === 'Enter') run(); }});
         q = v + ' ' + ' '.join(b['t'] for b in bs)
         if '小湴' in v:
             q += ' 小滘 小滘村'
-        fresh = ' <a class="fresh" href="https://fengshizupu.com/archives/a000100/">最新资料</a>' if v == '良西镇小湴村' else ''
+        fresh = ' <a class="fresh" href="https://fengshizupu.com/archives/a000100/" target="_blank" rel="noopener">最新资料</a>' if v == '良西镇小湴村' else ''
         secs.append(f'<div class="vsec" data-q="{esc(q)}"><div class="grp" id="{esc(v)}">{esc(v)}（{len(bs)} 个支系）{fresh}</div>{links}</div>')
     body = f'''<div class="wrap"><section class="block"><h2>村庄索引</h2>
 <p class="note">按原书世系目录标题中出现的村名整理：同一个村可能有多个房支，同一房支也可能分布在多个村。点村名看该村涉及的支系。</p>
