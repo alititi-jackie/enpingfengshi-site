@@ -353,8 +353,8 @@ function render(){{
   window.scrollTo(0,0);
 }}
 function sync(){{ history.replaceState(null,'','?p='+p); render(); }}
-let mode = 'single';
-try{{ mode = localStorage.getItem('readerMode') || 'single'; }}catch(e){{}}
+let mode = 'scroll';
+try{{ mode = localStorage.getItem('readerMode') || 'scroll'; }}catch(e){{}}
 if(mode !== 'scroll') mode = 'single';
 let lo = 0, hi = 0;
 const WIN = 7;
