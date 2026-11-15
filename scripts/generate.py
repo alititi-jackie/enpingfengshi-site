@@ -153,7 +153,7 @@ def build(data):
         zu_cards += f'<a class="card" href="{href}"><div class="big">{zu}</div><div class="small">{desc}</div></a>'
     body = f'''
 <div class="hero">
-<h1>查阅族谱</h1>
+<h1>寻根溯源 · 世系传承</h1>
 {search_box('q', '输入房名、支系、村名或书页码')}<div id="searchResults" role="status"></div>
 <div class="home-quick-links">
 <a href="/reader.html?p=1">从第一页开始</a>
