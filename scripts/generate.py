@@ -153,10 +153,12 @@ def build(data):
         zu_cards += f'<a class="card" href="{href}"><div class="big">{zu}</div><div class="small">{desc}</div></a>'
     body = f'''
 <div class="hero">
-<h1>恩平冯氏族谱</h1><div class="sub">寻 根 溯 源 · 世 系 传 承</div>
+<h1>查阅族谱</h1>
 {search_box('q', '输入房名、支系、村名或书页码')}<div id="searchResults" role="status"></div>
-<div class="btnrow"><a class="btn" href="/reader.html?p=1">从第一页开始看</a>
-<a class="btn ghost" href="/toc.html">看全书目录</a></div></div>
+<div class="home-quick-links">
+<a href="/reader.html?p=1">从第一页开始</a>
+<a href="/toc.html">查看全书目录</a>
+</div></div>
 <div class="wrap">
 <section class="block"><h2>三大宗系</h2><div class="cards">{zu_cards}</div></section>
 <section class="block"><h2>全书四章</h2><div class="cards">
