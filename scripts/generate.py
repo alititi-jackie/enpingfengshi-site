@@ -313,12 +313,13 @@ vq.addEventListener('input', function(){{
                  for b in branches]
     body = f'''
 <div class="readerbar">
-<a class="nav" href="/">首页</a>
+<a class="nav" href="/toc.html">返回目录</a>
 <span class="info" id="info"></span>
 <span class="info" id="branchInfo"></span>
 <span style="flex:1"></span>
 <span class="modes"><button id="mSingle" type="button">单页</button><button id="mScroll" type="button">连看</button></span>
-<label class="info">书页 <input id="jump" type="number" min="1" max="{BOOK_MAX}"></label>
+<button id="jumpToggle" type="button">跳页</button>
+<label class="info jumpctl">书页 <input id="jump" type="number" min="1" max="{BOOK_MAX}"></label>
 <button class="primary" id="jumpBtn">跳页</button>
 </div>
 <div class="readerwrap">
@@ -339,7 +340,7 @@ const img = document.getElementById('pg');
 const sv = document.getElementById('scrollView');
 function src(n){{ return '/pages/p' + String(n).padStart(4,'0') + '.webp'; }}
 function infoFor(n){{
-  document.getElementById('info').innerHTML = '<b>' + label(n) + '</b>（全书图第' + n + '页）';
+  document.getElementById('info').innerHTML = '<b>' + label(n) + '</b><span class="full-only">（全书图第' + n + '页）</span>';
   const bs = BR.filter(x => n>=x.from && n<=x.to);
   document.getElementById('branchInfo').innerHTML = bs.length ?
     '所属支系：' + bs.map(x => '<a href="/branch/' + x.id + '.html"><b>' + x.t + '</b></a>').join('、') : '';
@@ -469,8 +470,10 @@ document.getElementById('mSingle').onclick = () => setMode('single');
 document.getElementById('mScroll').onclick = () => setMode('scroll');
 document.getElementById('prev').onclick = e => {{ e.preventDefault(); if(p>1){{ if(mode === 'scroll') gotoPage(p - 1, true); else {{ p--; sync(); }} }} }};
 document.getElementById('next').onclick = e => {{ e.preventDefault(); if(p<TOTAL){{ if(mode === 'scroll') gotoPage(p + 1, true); else {{ p++; sync(); }} }} }};
+document.getElementById('jumpToggle').onclick = () => document.body.classList.toggle('jumpon');
 document.getElementById('jumpBtn').onclick = () => {{
   const v = parseInt(document.getElementById('jump').value);
+  document.body.classList.remove('jumpon');
   if(v>=1 && v<=BMAX) gotoPage(v + OFF, false); }};
 document.addEventListener('keydown', e => {{
   if(e.target && e.target.id === 'jump') return;

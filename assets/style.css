@@ -59,10 +59,11 @@ footer.site{border-top:1px solid var(--line);margin-top:36px;padding:18px 16px 3
   max-width:1160px;margin:0 auto;padding:8px 12px;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
 .readerbar .info{font-size:14px;color:var(--ink)}
 .readerbar .info b{color:var(--red)}
-.readerbar input{width:76px;padding:7px 8px;font-size:15px;border:1px solid var(--line);
+.readerbar input{width:76px;padding:7px 8px;font-size:15px;line-height:1.25;border:1px solid var(--line);
   border-radius:8px;font-family:inherit}
-.readerbar button,.readerbar a.nav{padding:7px 13px;font-size:15px;border-radius:8px;
+.readerbar button,.readerbar a.nav{padding:7px 13px;font-size:15px;line-height:1.25;border-radius:8px;
   border:1px solid var(--red);background:#fff;color:var(--red);cursor:pointer;font-family:inherit}
+#jumpToggle{display:none}
 .readerbar a.nav.primary,.readerbar button.primary{background:var(--red);color:#fff}
 .pageimg{display:block;width:100%;height:auto;background:#fff}
 .readerwrap{max-width:1160px;margin:0 auto}
@@ -105,4 +106,9 @@ footer.site .foot-main{display:inline-block;margin-top:8px;color:var(--red);font
 #scrollView .scap{font-size:13.5px;color:var(--muted);padding:2px 2px 6px}
 #scrollView .scap b{color:var(--red)}
 body.scrollmode .readerbar{position:sticky;top:48px;z-index:40;box-shadow:0 2px 8px rgba(60,40,20,.08)}
-@media(max-width:650px){body.scrollmode .readerbar{top:44px}}
+@media(max-width:650px){body.scrollmode .readerbar{top:44px}
+  #branchInfo,.full-only{display:none}
+  #jumpToggle{display:block}
+  .readerbar label.jumpctl,#jumpBtn{display:none}
+  body.jumpon .readerbar label.jumpctl{display:flex;align-items:center;gap:6px}
+  body.jumpon #jumpBtn{display:block}}
