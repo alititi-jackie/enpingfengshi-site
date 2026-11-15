@@ -56,7 +56,7 @@ footer.site{border-top:1px solid var(--line);margin-top:36px;padding:18px 16px 3
   text-align:center;color:var(--muted);font-size:13px}
 /* reader */
 .readerbar{background:var(--paper);border-bottom:1px solid var(--line);
-  padding:8px 12px;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+  padding:8px max(12px,calc((100% - 1160px)/2 + 12px));display:flex;gap:8px;align-items:center;flex-wrap:wrap}
 .readerbar .info{font-size:14px;color:var(--ink)}
 .readerbar .info b{color:var(--red)}
 .readerbar input{width:76px;padding:7px 8px;font-size:15px;border:1px solid var(--line);
