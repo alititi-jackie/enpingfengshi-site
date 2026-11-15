@@ -328,9 +328,8 @@ filterList('vq', 'vcount', '.vsec', '个村');
 if('scrollRestoration' in history) history.scrollRestoration = 'manual';
 const TOTAL = {TOTAL_PDF}, OFF = {BOOK_OFFSET}, BMAX = {BOOK_MAX};
 const BR = {json.dumps(branch_js, ensure_ascii=False)};
-function label(n){{ if(n<=17) return '卷首第'+n+'页'; if(n<=30) return '目录第'+(n-17)+'页';
-  if(n<=43) return '目录第'+(n-30)+'页';
-  if(n<=BMAX+OFF) return '书第'+(n-OFF)+'页'; return '封底'; }}
+const PAGE_LABELS = {json.dumps([''] + [label_for_pdf(n) for n in range(1, TOTAL_PDF + 1)], ensure_ascii=False)};
+function label(n){{ return PAGE_LABELS[n]; }}
 let p = parseInt(new URLSearchParams(location.search).get('p') || '31');
 if(!(p>=1 && p<=TOTAL)) p = 31;
 const img = document.getElementById('pg');
