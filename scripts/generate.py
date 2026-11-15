@@ -102,6 +102,9 @@ def build(data):
     shutil.copy(os.path.join(ROOT, 'assets', 'style.css'), os.path.join(SITE, 'assets', 'style.css'))
     shutil.copy(os.path.join(ROOT, 'assets', 'icon.svg'), os.path.join(SITE, 'assets', 'icon.svg'))
     shutil.copy(os.path.join(ROOT, 'favicon.svg'), os.path.join(SITE, 'favicon.svg'))
+    import glob
+    for vf in glob.glob(os.path.join(ROOT, 'baidu_verify_*.html')):
+        shutil.copy(vf, os.path.join(SITE, os.path.basename(vf)))
 
     branches = data['branches']
     all_entries = data['all']
