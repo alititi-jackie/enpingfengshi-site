@@ -179,11 +179,12 @@ function run(){{
     return '<a href="' + href + '">' + d.t + '<span class="pg">' + tag + ' · ' + pg + '</span></a>';
   }}).join('');
 }}
-document.getElementById('go').onclick = run;
+function jumpNum(){{ const s = q.value.trim();
+  if(/^\\d+$/.test(s)){{ const bp = parseInt(s); if(bp>=1 && bp<={BOOK_MAX}){{ location.href = '/reader.html?p=' + (bp + {BOOK_OFFSET}); return true; }} }}
+  return false; }}
+document.getElementById('go').onclick = () => {{ if(!jumpNum()) run(); }};
 q.addEventListener('input', run);
-q.addEventListener('keydown', e => {{ if(e.key === 'Enter'){{ const s = q.value.trim();
-  if(/^\\d+$/.test(s)){{ const bp = parseInt(s); if(bp>=1 && bp<={BOOK_MAX}){{ location.href = '/reader.html?p=' + (bp + {BOOK_OFFSET}); return; }} }}
-  run(); }} }});
+q.addEventListener('keydown', e => {{ if(e.key === 'Enter' && !jumpNum()) run(); }});
 </script>'''
     w('index.html', page('恩平冯氏族谱｜在线查阅', body,
                          '《恩平冯氏族谱》在线查阅：按目录、房支、村庄查找，或输入书页码直接翻到原书那一页。', 'home'))
