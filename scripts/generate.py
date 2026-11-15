@@ -185,6 +185,11 @@ function jumpNum(){{ const s = q.value.trim();
 document.getElementById('go').onclick = () => {{ if(!jumpNum()) run(); }};
 q.addEventListener('input', run);
 q.addEventListener('keydown', e => {{ if(e.key === 'Enter' && !jumpNum()) run(); }});
+const incomingQuery = new URLSearchParams(window.location.search).get('q');
+if (incomingQuery !== null && incomingQuery.trim() !== '') {{
+  q.value = incomingQuery.trim();
+  if (!jumpNum()) run();
+}}
 </script>'''
     w('index.html', page('恩平冯氏族谱｜在线查阅', body,
                          '《恩平冯氏族谱》在线查阅：按目录、房支、村庄查找，或输入书页码直接翻到原书那一页。', 'home'))
