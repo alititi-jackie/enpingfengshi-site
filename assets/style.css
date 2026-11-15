@@ -94,3 +94,4 @@ footer.site .foot-main{display:inline-block;margin-top:8px;color:var(--red);font
 .vcount{font-size:13px;color:var(--muted);margin-top:6px;min-height:18px}
 .list a.fresh{display:inline-block;background:var(--red);color:#fff;border:0;border-radius:999px;
   padding:1px 10px;font-size:12.5px;font-weight:400;margin:0 0 0 6px;vertical-align:2px}
+.vsec .grp{scroll-margin-top:64px}
