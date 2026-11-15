@@ -8,7 +8,7 @@ body{margin:0;background:var(--cream);color:var(--ink);
   font-family:"Noto Serif SC","Songti SC","SimSun",serif;line-height:1.75}
 a{color:var(--red);text-decoration:none}
 a:active{opacity:.7}
-.wrap{max-width:860px;margin:0 auto;padding:0 16px}
+.wrap{max-width:1160px;margin:0 auto;padding:0 16px}
 .brandbar{padding:24px 0 14px}
 .brandbar .brand{display:flex;gap:13px;align-items:center;text-decoration:none;color:var(--red)}
 .brandbar .brand img{width:46px;height:46px;border-radius:10px;display:block}
@@ -25,15 +25,16 @@ a:active{opacity:.7}
 .hero img.logo{width:84px;height:84px;border-radius:18px}
 .hero h1{margin:12px 0 2px;font-size:30px;color:var(--red);letter-spacing:.12em}
 .hero .sub{color:var(--muted);font-size:14px;letter-spacing:.3em}
-.searchbox{margin:20px auto 6px;max-width:560px;display:flex;gap:8px}
+.searchbox{margin:20px auto 6px;max-width:860px;display:flex;gap:8px}
 .searchbox input{flex:1;padding:12px 14px;font-size:16px;border:1.5px solid var(--red);
   border-radius:10px;background:#fff;font-family:inherit;min-width:0}
 .searchbox button{padding:12px 20px;font-size:16px;border:0;border-radius:10px;
   background:var(--red);color:#fff;font-family:inherit;cursor:pointer}
-#searchResults{max-width:560px;margin:6px auto 0;text-align:left}
-#searchResults a{display:block;background:#fff;border:1px solid var(--line);
+#searchResults{max-width:860px;margin:6px auto 0;text-align:left}
+#searchResults a{display:flex;justify-content:space-between;gap:10px;align-items:baseline;
+  background:#fff;border:1px solid var(--line);
   border-radius:8px;padding:9px 12px;margin-top:6px;color:var(--ink);font-size:15px}
-#searchResults a .pg{color:var(--red);float:right}
+#searchResults a .pg{color:var(--red);white-space:nowrap;flex-shrink:0}
 .cards{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:22px 0}
 @media(min-width:640px){.cards{grid-template-columns:1fr 1fr 1fr}}
 .card{background:var(--paper);border:1px solid var(--line);border-radius:12px;
@@ -64,7 +65,7 @@ footer.site{border-top:1px solid var(--line);margin-top:36px;padding:18px 16px 3
   border:1px solid var(--red);background:#fff;color:var(--red);cursor:pointer;font-family:inherit}
 .readerbar a.nav.primary,.readerbar button.primary{background:var(--red);color:#fff}
 .pageimg{display:block;width:100%;height:auto;background:#fff}
-.readerwrap{max-width:900px;margin:0 auto}
+.readerwrap{max-width:1160px;margin:0 auto}
 .pagenav{display:flex;justify-content:space-between;gap:10px;padding:14px 12px 26px}
 .pagenav a{flex:1;text-align:center;background:var(--red);color:#fff;padding:12px;
   border-radius:10px;font-size:16px}
