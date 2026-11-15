@@ -95,3 +95,14 @@ footer.site .foot-main{display:inline-block;margin-top:8px;color:var(--red);font
 .list a.fresh{display:inline-block;background:var(--red);color:#fff;border:0;border-radius:999px;
   padding:1px 10px;font-size:12.5px;font-weight:400;margin:0 0 0 6px;vertical-align:2px}
 .vsec .grp{scroll-margin-top:64px}
+/* dual-mode reader: single page / continuous scroll (2026-11-14) */
+.pageimg{aspect-ratio:1397/1984}
+.modes{display:inline-flex;border:1px solid var(--red);border-radius:8px;overflow:hidden;flex-shrink:0}
+.modes button{padding:7px 11px;font-size:15px;border:0;background:#fff;color:var(--red);
+  cursor:pointer;font-family:inherit;line-height:1.25}
+.modes button.on{background:var(--red);color:#fff}
+#scrollView .spage{margin-bottom:16px}
+#scrollView .scap{font-size:13.5px;color:var(--muted);padding:2px 2px 6px}
+#scrollView .scap b{color:var(--red)}
+body.scrollmode .readerbar{position:sticky;top:48px;z-index:40;box-shadow:0 2px 8px rgba(60,40,20,.08)}
+@media(max-width:650px){body.scrollmode .readerbar{top:44px}}
