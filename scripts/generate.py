@@ -317,14 +317,17 @@ vq.addEventListener('input', function(){{
 <span class="info" id="info"></span>
 <span class="info" id="branchInfo"></span>
 <span style="flex:1"></span>
+<span class="modes"><button id="mSingle" type="button">单页</button><button id="mScroll" type="button">连看</button></span>
 <label class="info">书页 <input id="jump" type="number" min="1" max="{BOOK_MAX}"></label>
 <button class="primary" id="jumpBtn">跳页</button>
 </div>
 <div class="readerwrap">
 <img class="pageimg" id="pg" alt="族谱原书页">
+<div id="scrollView" style="display:none"></div>
 <div class="pagenav"><a id="prev" href="#">← 上一页</a><a id="next" href="#">下一页 →</a></div>
 </div>
 <script>
+if('scrollRestoration' in history) history.scrollRestoration = 'manual';
 const TOTAL = {TOTAL_PDF}, OFF = {BOOK_OFFSET}, BMAX = {BOOK_MAX};
 const BR = {json.dumps(branch_js, ensure_ascii=False)};
 function label(n){{ if(n<=17) return '卷首第'+n+'页'; if(n<=30) return '目录第'+(n-17)+'页';
@@ -333,27 +336,147 @@ function label(n){{ if(n<=17) return '卷首第'+n+'页'; if(n<=30) return '目�
 let p = parseInt(new URLSearchParams(location.search).get('p') || '31');
 if(!(p>=1 && p<=TOTAL)) p = 31;
 const img = document.getElementById('pg');
-function render(){{
-  img.src = '/pages/p' + String(p).padStart(4,'0') + '.webp';
-  img.alt = '《恩平冯氏族谱》' + label(p);
-  document.getElementById('info').innerHTML = '<b>' + label(p) + '</b>（全书图第' + p + '页）';
-  const bs = BR.filter(x => p>=x.from && p<=x.to);
+const sv = document.getElementById('scrollView');
+function src(n){{ return '/pages/p' + String(n).padStart(4,'0') + '.webp'; }}
+function infoFor(n){{
+  document.getElementById('info').innerHTML = '<b>' + label(n) + '</b>（全书图第' + n + '页）';
+  const bs = BR.filter(x => n>=x.from && n<=x.to);
   document.getElementById('branchInfo').innerHTML = bs.length ?
     '所属支系：' + bs.map(x => '<a href="/branch/' + x.id + '.html"><b>' + x.t + '</b></a>').join('、') : '';
   const pv = document.getElementById('prev'), nx = document.getElementById('next');
-  pv.className = p<=1 ? 'off' : ''; nx.className = p>=TOTAL ? 'off' : '';
-  pv.onclick = e => {{ e.preventDefault(); if(p>1){{ p--; sync(); }} }};
-  nx.onclick = e => {{ e.preventDefault(); if(p<TOTAL){{ p++; sync(); }} }};
+  pv.className = n<=1 ? 'off' : ''; nx.className = n>=TOTAL ? 'off' : '';
+}}
+function render(){{
+  img.src = src(p);
+  img.alt = '《恩平冯氏族谱》' + label(p);
+  infoFor(p);
   window.scrollTo(0,0);
 }}
 function sync(){{ history.replaceState(null,'','?p='+p); render(); }}
+let mode = 'single';
+try{{ mode = localStorage.getItem('readerMode') || 'single'; }}catch(e){{}}
+if(mode !== 'scroll') mode = 'single';
+let lo = 0, hi = 0;
+const WIN = 7;
+function blockHTML(n){{
+  const bs = BR.filter(x => n>=x.from && n<=x.to);
+  const bt = bs.length ? ' · ' + bs.map(x => x.t).join('、') : '';
+  return '<div class="spage" data-p="' + n + '"><div class="scap"><b>' + label(n) + '</b>（全书图第' + n + '页）' + bt + '</div>' +
+    '<img class="pageimg" loading="lazy" src="' + src(n) + '" alt="《恩平冯氏族谱》' + label(n) + '"></div>';
+}}
+function blockEl(n){{ return sv.querySelector('.spage[data-p="' + n + '"]'); }}
+function buildScroll(center){{
+  lo = Math.max(1, center - WIN); hi = Math.min(TOTAL, center + WIN);
+  let h = ''; for(let n = lo; n <= hi; n++) h += blockHTML(n);
+  sv.innerHTML = h;
+}}
+function barOffset(){{
+  const nav = document.querySelector('.mainnav');
+  const bar = document.querySelector('.readerbar');
+  return (nav ? nav.offsetHeight : 48) + (bar ? bar.offsetHeight : 50) + 6;
+}}
+let holdUntil = 0;
+function scrollToPage(n, smooth){{
+  const el = blockEl(n); if(!el) return;
+  const y = el.getBoundingClientRect().top + window.scrollY - barOffset();
+  holdUntil = Date.now() + 180;
+  window.scrollTo({{ top: y, behavior: smooth ? 'smooth' : 'auto' }});
+}}
+function anchorTop(){{
+  const els = sv.querySelectorAll('.spage');
+  for(let i = 0; i < els.length; i++){{
+    const r = els[i].getBoundingClientRect();
+    if(r.bottom > 0) return {{ n: parseInt(els[i].dataset.p), top: r.top }};
+  }}
+  return null;
+}}
+function restoreAnchor(a){{
+  if(!a) return;
+  const el = blockEl(a.n);
+  if(el) window.scrollBy(0, el.getBoundingClientRect().top - a.top);
+}}
+function currentFromScroll(){{
+  const line = barOffset() + 30;
+  let cur = lo, best = 0;
+  const els = sv.querySelectorAll('.spage');
+  for(let i = 0; i < els.length; i++){{
+    const r = els[i].getBoundingClientRect();
+    if(r.top <= line) cur = parseInt(els[i].dataset.p);
+    if(r.top <= line && r.bottom > line){{ best = parseInt(els[i].dataset.p); break; }}
+  }}
+  return best || cur;
+}}
+let ticking = false;
+function onScroll(){{
+  if(mode !== 'scroll' || ticking) return;
+  ticking = true;
+  requestAnimationFrame(() => {{
+    ticking = false;
+    if(mode !== 'scroll' || Date.now() < holdUntil) return;
+    const cur = currentFromScroll();
+    if(cur !== p){{ p = cur; history.replaceState(null,'','?p='+p); infoFor(p); }}
+    if(hi < TOTAL && hi - p <= 3){{
+      let h = ''; const nhi = Math.min(TOTAL, hi + WIN);
+      for(let n = hi + 1; n <= nhi; n++) h += blockHTML(n);
+      sv.insertAdjacentHTML('beforeend', h); hi = nhi;
+    }}
+    if(lo > 1 && p - lo <= 3){{
+      let h = ''; const nlo = Math.max(1, lo - WIN);
+      for(let n = nlo; n <= lo - 1; n++) h += blockHTML(n);
+      const a = anchorTop();
+      sv.insertAdjacentHTML('afterbegin', h);
+      restoreAnchor(a);
+      lo = nlo;
+    }}
+    if(hi - p > WIN + 10){{
+      const n = p + WIN + 4;
+      sv.querySelectorAll('.spage').forEach(el => {{ if(parseInt(el.dataset.p) > n) el.remove(); }});
+      hi = n;
+    }}
+    if(p - lo > WIN + 10){{
+      const n = p - WIN - 4;
+      const a = anchorTop();
+      sv.querySelectorAll('.spage').forEach(el => {{ if(parseInt(el.dataset.p) < n) el.remove(); }});
+      restoreAnchor(a);
+      lo = n;
+    }}
+  }});
+}}
+window.addEventListener('scroll', onScroll, {{ passive: true }});
+function gotoPage(n, smooth){{
+  p = Math.max(1, Math.min(TOTAL, n));
+  history.replaceState(null,'','?p='+p);
+  if(mode === 'scroll'){{
+    if(p < lo || p > hi) buildScroll(p);
+    infoFor(p);
+    scrollToPage(p, !!smooth);
+  }} else render();
+}}
+function setMode(m){{
+  mode = m;
+  try{{ localStorage.setItem('readerMode', m); }}catch(e){{}}
+  document.getElementById('mSingle').className = m === 'single' ? 'on' : '';
+  document.getElementById('mScroll').className = m === 'scroll' ? 'on' : '';
+  document.body.classList.toggle('scrollmode', m === 'scroll');
+  const single = m === 'single';
+  img.style.display = single ? '' : 'none';
+  sv.style.display = single ? 'none' : '';
+  if(single) render();
+  else {{ buildScroll(p); infoFor(p); scrollToPage(p, false);
+    requestAnimationFrame(() => {{ if(mode === 'scroll') scrollToPage(p, false); }}); }}
+}}
+document.getElementById('mSingle').onclick = () => setMode('single');
+document.getElementById('mScroll').onclick = () => setMode('scroll');
+document.getElementById('prev').onclick = e => {{ e.preventDefault(); if(p>1){{ if(mode === 'scroll') gotoPage(p - 1, true); else {{ p--; sync(); }} }} }};
+document.getElementById('next').onclick = e => {{ e.preventDefault(); if(p<TOTAL){{ if(mode === 'scroll') gotoPage(p + 1, true); else {{ p++; sync(); }} }} }};
 document.getElementById('jumpBtn').onclick = () => {{
   const v = parseInt(document.getElementById('jump').value);
-  if(v>=1 && v<=BMAX){{ p = v + OFF; sync(); }} }};
+  if(v>=1 && v<=BMAX) gotoPage(v + OFF, false); }};
 document.addEventListener('keydown', e => {{
-  if(e.key==='ArrowLeft' && p>1){{ p--; sync(); }}
-  if(e.key==='ArrowRight' && p<TOTAL){{ p++; sync(); }} }});
-render();
+  if(e.target && e.target.id === 'jump') return;
+  if(e.key==='ArrowLeft' && p>1){{ if(mode === 'scroll') gotoPage(p - 1, true); else {{ p--; sync(); }} }}
+  if(e.key==='ArrowRight' && p<TOTAL){{ if(mode === 'scroll') gotoPage(p + 1, true); else {{ p++; sync(); }} }} }});
+setMode(mode);
 </script>'''
     w('reader.html', head('看原书｜恩平冯氏族谱') + header('toc') + body + FAB + '</body></html>')
 
