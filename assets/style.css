@@ -25,12 +25,12 @@ a:active{opacity:.7}
 .hero img.logo{width:84px;height:84px;border-radius:18px}
 .hero h1{margin:12px 0 2px;font-size:30px;color:var(--red);letter-spacing:.12em}
 .hero .sub{color:var(--muted);font-size:14px;letter-spacing:.3em}
-.searchbox{margin:20px auto 6px;max-width:860px;display:flex;gap:8px}
+.searchbox{margin:20px auto 6px;max-width:1160px;display:flex;gap:8px}
 .searchbox input{flex:1;padding:12px 14px;font-size:16px;border:1.5px solid var(--red);
   border-radius:10px;background:#fff;font-family:inherit;min-width:0}
 .searchbox button{padding:12px 20px;font-size:16px;border:0;border-radius:10px;
   background:var(--red);color:#fff;font-family:inherit;cursor:pointer}
-#searchResults{max-width:860px;margin:6px auto 0;text-align:left}
+#searchResults{max-width:1160px;margin:6px auto 0;text-align:left}
 #searchResults a{display:flex;justify-content:space-between;gap:10px;align-items:baseline;
   background:#fff;border:1px solid var(--line);
   border-radius:8px;padding:9px 12px;margin-top:6px;color:var(--ink);font-size:15px}
