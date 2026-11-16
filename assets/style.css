@@ -126,3 +126,19 @@ body.scrollmode .readerbar{position:sticky;top:48px;z-index:40;box-shadow:0 2px 
 .image-viewport{height:calc(100% - 64px);overflow:auto;overscroll-behavior:contain}
 .image-viewport img{display:block;max-width:100%;max-height:100%;height:auto;width:auto;margin:auto}
 .image-viewport img.zoomed{max-width:none;max-height:none;width:1509px;height:auto;margin:0 auto}
+
+.edition-crumb { margin: 1rem 0; }
+.edition-links, .edition-reader-controls { display: flex; flex-wrap: wrap; gap: .65rem 1rem; align-items: center; }
+.edition-reader-controls input { width: 5em; }
+.edition-reader-controls button { font: inherit; cursor: pointer; }
+.edition-catalog img { display: block; width: 100%; height: auto; margin-bottom: .55rem; }
+.edition figure { margin: 1.25rem 0; }
+.edition figcaption { margin-bottom: .5rem; }
+.edition-image { width: 100%; }
+.edition-tree { padding-left: 1rem; border-left: 1px solid #dbcac4; }
+.edition-tree details { padding: .25rem 0; }
+.edition-tree summary { cursor: pointer; overflow-wrap: anywhere; }
+.edition-tree p { margin: .25rem 0; }
+#searchResults a.edition-result .pg, .edition .list a .pg { white-space: normal; }
+#searchResults a.edition-result .pg { flex-shrink: 1; text-align: right; }
+.edition-inline-people a:not([style]) { display: none; }

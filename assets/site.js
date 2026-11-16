@@ -1,7 +1,7 @@
 const normalizeQuery = (value) => value.normalize('NFKC').replaceAll('馮', '冯').trim().toLowerCase();
 const readerURL = (page) => '/reader.html?p=' + page;
 
-function filterList(id, statusId, selector, unit) {
+function filterList(id, statusId, selector, unit, showUnfiltered = true) {
   const input = document.getElementById(id);
   const status = document.getElementById(statusId);
   const rows = [...document.querySelectorAll(selector)].map(row => [row, normalizeQuery(row.dataset.q)]);
@@ -9,7 +9,7 @@ function filterList(id, statusId, selector, unit) {
     const term = normalizeQuery(input.value);
     let count = 0;
     for (const [row, keys] of rows) {
-      const visible = keys.includes(term);
+      const visible = term ? keys.includes(term) : showUnfiltered;
       row.style.display = visible ? '' : 'none';
       if (visible) count++;
     }

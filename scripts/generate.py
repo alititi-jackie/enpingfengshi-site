@@ -9,6 +9,7 @@ Page images (site/pages/pNNNN.webp, NNNN = PDF page 1..1301) are rendered
 by the workflow before this script runs; this script does not touch them.
 """
 import json, os, re, shutil, html
+from village_editions import INDEX, build_editions, edition_path, edition_title
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SITE = os.path.join(ROOT, 'site')
@@ -59,7 +60,7 @@ def head(title, desc=''):
 
 def header(active=''):
     links = [('首页', '/', 'home'), ('目录', '/toc.html', 'toc'), ('村庄', '/villages.html', 'villages'),
-             ('购买', '/buy.html', 'buy'), ('主站', 'https://fengshizupu.com', 'main')]
+             ('村庄更新资料', INDEX, 'editions'), ('购买', '/buy.html', 'buy'), ('主站', 'https://fengshizupu.com', 'main')]
     parts = []
     for t, u, k in links:
         cls = ' class="on"' if k == active else ''
@@ -115,6 +116,7 @@ def build(data):
     shutil.copy(os.path.join(ROOT, 'assets', 'style.css'), os.path.join(SITE, 'assets', 'style.css'))
     shutil.copy(os.path.join(ROOT, 'assets', 'icon.svg'), os.path.join(SITE, 'assets', 'icon.svg'))
     shutil.copy(os.path.join(ROOT, 'favicon.svg'), os.path.join(SITE, 'favicon.svg'))
+    shutil.copy(os.path.join(ROOT, 'assets', 'edition-reader.js'), os.path.join(SITE, 'assets', 'edition-reader.js'))
     import glob
     for vf in glob.glob(os.path.join(ROOT, 'baidu_verify_*.html')):
         shutil.copy(vf, os.path.join(SITE, os.path.basename(vf)))
@@ -123,6 +125,12 @@ def build(data):
     all_entries = data['all']
     by_id = {b['id']: b for b in branches}
     villages = {name: [by_id[i] for i in ids] for name, ids in data.get('villages', {}).items()}
+    edition_results, edition_urls, updated_villages = build_editions(
+        ROOT, SITE, page, w, entry, search_box, villages)
+    updates_by_book_village = {}
+    for editions in updated_villages.values():
+        for edition in editions:
+            updates_by_book_village.setdefault(edition.get('bookVillage'), []).append(edition)
     branch_villages = {}
     for name, bs in villages.items():
         for b in bs:
@@ -154,7 +162,7 @@ def build(data):
     body = f'''
 <div class="hero">
 <h1>寻根溯源 · 世系传承</h1>
-{search_box('q', '输入房名、支系、村名或书页码')}<div id="searchResults" role="status"></div>
+{search_box('q', '输入村名、房支、书页码或新版人名')}<div id="searchResults" role="status"></div>
 <div class="home-quick-links">
 <a href="/reader.html?p=1">从第一页开始</a>
 <a href="/toc.html">查看全书目录</a>
@@ -177,6 +185,7 @@ def build(data):
 </div>
 <script>
 const DATA = {json.dumps(search_data, ensure_ascii=False)};
+const EDITIONS = {json.dumps(edition_results, ensure_ascii=False).replace('<', chr(92) + 'u003c')};
 const q = document.getElementById('q'), box = document.getElementById('searchResults');
 function run(){{
   const s = normalizeQuery(q.value); box.innerHTML = '';
@@ -186,8 +195,13 @@ function run(){{
     else {{ box.innerHTML = '<a>书页码在 1–' + {BOOK_MAX} + ' 之间</a>'; }}
     return; }}
   const hits = DATA.filter(d => normalizeQuery(d.t + ' ' + (d.k || '')).includes(s)).slice(0, 12);
-  if(!hits.length){{ box.innerHTML = '<a>暂未找到相关记录，请换个关键词或查看全书目录</a>'; return; }}
-  box.innerHTML = '<p>显示 ' + hits.length + ' 条相关记录</p>' + hits.map(d => {{
+  const editionHits = EDITIONS.filter(d => d.kind === 'edition' &&
+    normalizeQuery(d.t + ' ' + d.k).includes(s));
+  const people = EDITIONS.filter(d => d.kind === 'person' &&
+    normalizeQuery(d.t + ' ' + d.k).includes(s)).sort((a, b) =>
+      Number(normalizeQuery(b.t) === s) - Number(normalizeQuery(a.t) === s)).slice(0, 12);
+  if(!hits.length && !editionHits.length && !people.length){{ box.innerHTML = '<a>暂未找到相关记录，请换个关键词或查看全书目录</a>'; return; }}
+  box.innerHTML = '<p>显示 ' + (hits.length + editionHits.length + people.length) + ' 条相关记录</p>' + hits.map(d => {{
     const href = d.kind === 'branch' ? '/branch/' + d.id + '.html' :
                  d.kind === 'village' ? '/villages.html#' + encodeURIComponent(d.a || d.t) :
                  d.pdf ? readerURL(d.pdf) : readerURL(d.p + {BOOK_OFFSET});
@@ -195,6 +209,20 @@ function run(){{
     const pg = d.pdf ? '卷首' : '书第' + d.p + '页';
     return '<a href="' + href + '">' + d.t + '<span class="pg">' + tag + ' · ' + pg + '</span></a>';
   }}).join('');
+  function appendEditionResult(d, before) {{
+    const link = document.createElement('a');
+    link.href = d.url;
+    link.className = 'edition-result';
+    link.textContent = d.t;
+    const detail = document.createElement('span');
+    detail.className = 'pg';
+    detail.textContent = d.detail;
+    link.append(detail);
+    box.insertBefore(link, before);
+  }}
+  const firstOriginal = box.querySelector('a');
+  for (const edition of editionHits) appendEditionResult(edition, firstOriginal);
+  for (const person of people) appendEditionResult(person, null);
 }}
 function jumpNum(){{ const s = normalizeQuery(q.value);
   if(/^\\d+$/.test(s)){{ const bp = parseInt(s); if(bp>=1 && bp<={BOOK_MAX}){{ location.href = readerURL(bp + {BOOK_OFFSET}); return true; }} }}
@@ -281,7 +309,10 @@ filterList('tq', 'tcount', '#toclist > a', '条');
         q = v + ' ' + ' '.join(b['t'] for b in bs)
         if '小湴' in v:
             q += ' 小滘 小滘村'
-        fresh = ' <a class="fresh" href="https://fengshizupu.com/archives/a000100/" target="_blank" rel="noopener">最新资料</a>' if v == '良西镇小湴村' else ''
+        fresh = ''.join(
+            f' <a class="fresh" href="{edition_path(e)}">{esc(edition_title(e))}</a>'
+            for e in updates_by_book_village.get(v, []))
+        q += ' ' + ' '.join(edition_title(e) for e in updates_by_book_village.get(v, []))
         secs.append(f'<div class="vsec" data-q="{esc(q)}"><div class="grp" id="{esc(v)}">{esc(v)}（{len(bs)} 个支系）{fresh}</div>{links}</div>')
     body = f'''<div class="wrap"><section class="block"><h2>村庄索引</h2>
 <p class="note">按原书世系目录标题中出现的村名整理：同一个村可能有多个房支，同一房支也可能分布在多个村。点村名看该村涉及的支系。</p>
@@ -494,7 +525,7 @@ setMode(mode);
     w('404.html', page('没有这一页', '<div class="wrap"><section class="block"><h2>没有这一页</h2><p>回到<a href="/">首页</a>重新查找。</p></section></div>'))
 
     # ---------- sitemap ----------
-    urls = ['/', '/toc.html', '/villages.html', '/buy.html'] + [f'/branch/{b["id"]}.html' for b in branches]
+    urls = ['/', '/toc.html', '/villages.html', '/buy.html'] + [f'/branch/{b["id"]}.html' for b in branches] + edition_urls
     sm = '<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n' + \
          ''.join(f'<url><loc>https://enping.fengshizupu.com{u}</loc></url>\n' for u in urls) + '</urlset>'
     with open(os.path.join(SITE, 'sitemap.xml'), 'w', encoding='utf-8') as f:
