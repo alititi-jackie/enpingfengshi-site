@@ -123,9 +123,11 @@ def build_editions(root, site, page, write, entry, search_box, old_villages, rea
                                 f'{tree(relative_id, relations, seen | {relative_id})}</details>')
             return '<div class="edition-tree">' + ''.join(branches) + '</div>' if branches else ''
 
-        breadcrumb = (f'<p class="edition-crumb"><a href="{INDEX}">村庄更新资料</a> › '
-                      f'<a href="{village_path(edition)}">{escape(village)}</a></p>')
-        back = f'<p class="edition-crumb"><a href="{base}">{escape(title)}</a></p>'
+        breadcrumb = (f'<nav class="crumb" aria-label="面包屑"><a href="/">首页</a> / '
+                      f'<a href="{INDEX}">村庄更新资料</a> / '
+                      f'<a href="{village_path(edition)}">{escape(village)}</a></nav>')
+        back = (f'<nav class="crumb" aria-label="面包屑"><a href="/">首页</a> / '
+                f'<a href="{base}">{escape(title)}</a></nav>')
         book = media_url(edition.get('bookFile', 'book.pdf'))
         catalog, person_rows = [], []
         for p in persons.values():
@@ -242,7 +244,7 @@ def build_editions(root, site, page, write, entry, search_box, old_villages, rea
                 f'<p class="edition-links"><a href="{base}search/">查姓名</a>'
                 f'<a href="{base}read/">整版阅读</a><a href="{book}" download>下载整版 PDF</a></p>'
                 f'<h2>在本档案中查姓名</h2>{inline_search}'
-                f'<h2 id="sheets">图式谱页</h2><div class="cards edition-catalog">{"".join(catalog)}</div>'
+                f'<h2 id="sheets">图式谱页</h2><div class="cards edition-catalog theme-catalog">{"".join(catalog)}</div>'
                 f'<p><a class="btn" href="{base}originals/">原谱档案</a></p></section>',
                 f'{edition["town"]}{village}{edition["branch"]}更新族谱，收录 {len(pages)} 张谱页，可查姓名、看世系。')
 

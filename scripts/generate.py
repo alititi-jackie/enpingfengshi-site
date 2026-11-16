@@ -9,6 +9,7 @@ Page images (site/pages/pNNNN.webp, NNNN = PDF page 1..1301) are rendered
 by the workflow before this script runs; this script does not touch them.
 """
 import json, os, re, shutil, html
+from hashlib import sha256
 from village_editions import INDEX, build_editions, edition_path, edition_title
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -64,6 +65,9 @@ def entry(href, title, detail, attributes=''):
     return f'<a{attributes} href="{esc(href)}"><span>{esc(title)}</span><span class="pg">{esc(detail)}</span></a>'
 
 ORIGIN = 'https://enping.fengshizupu.com'
+THEME_FILE = os.path.join(ROOT, 'assets', 'genealogy-theme.css')
+with open(THEME_FILE, 'rb') as theme:
+    THEME_VERSION = sha256(theme.read()).hexdigest()[:12]
 
 
 def head(title, desc, url, index):
@@ -96,10 +100,11 @@ def head(title, desc, url, index):
 <meta name="twitter:description" content="{esc(desc)}">
 <meta name="twitter:image" content="{ORIGIN}/assets/share-logo.png">
 <link rel="icon" type="image/svg+xml" href="/favicon.svg">
-<link rel="stylesheet" href="/assets/style.css?v=hero-left-1">
+<link rel="stylesheet" href="/assets/style.css?v=shared-theme-1">
+<link rel="stylesheet" href="/assets/genealogy-theme.css?v={THEME_VERSION}">
 <script src="/assets/site.js"></script>
 </head>
-<body>'''
+<body class="site-theme">'''
 
 def header(active=''):
     links = [('首页', '/', 'home'), ('目录', '/toc.html', 'toc'), ('村庄', '/villages.html', 'villages'),
@@ -115,7 +120,7 @@ def header(active=''):
 </div></header>
 <nav class="mainnav"><div class="wrap mainnav-in">{nav}</div></nav>'''
 
-FOOT = '''<footer class="site">恩平冯氏族谱 · 在线查阅<br>
+FOOT = '''<footer class="site site-footer">恩平冯氏族谱 · 在线查阅<br>
 <strong>本站原书版本 ·《恩平冯氏族谱》1995 年重修版</strong> · <a href="/buy.html">购买电子版</a><br>
 全国数字族谱平台 · <a href="https://fengshizupu.com/">fengshizupu.com</a> · <a href="/about/">关于本站</a>
 </footer>
@@ -161,6 +166,7 @@ def build(data):
     os.makedirs(os.path.join(SITE, 'branch'), exist_ok=True)
     shutil.copy(os.path.join(ROOT, 'assets', 'site.js'), os.path.join(SITE, 'assets', 'site.js'))
     shutil.copy(os.path.join(ROOT, 'assets', 'style.css'), os.path.join(SITE, 'assets', 'style.css'))
+    shutil.copy(THEME_FILE, os.path.join(SITE, 'assets', 'genealogy-theme.css'))
     shutil.copy(os.path.join(ROOT, 'assets', 'icon.svg'), os.path.join(SITE, 'assets', 'icon.svg'))
     shutil.copy(os.path.join(ROOT, 'favicon.svg'), os.path.join(SITE, 'favicon.svg'))
     shutil.copy(os.path.join(ROOT, 'assets', 'edition-reader.js'), os.path.join(SITE, 'assets', 'edition-reader.js'))
@@ -319,7 +325,7 @@ if (incomingQuery !== null && incomingQuery.trim() !== '') {{
         css = ' class="grp"' if lvl <= 1 else ' class="note-link"' if not raw_targets[i] else ''
         key = esc(e['t'] + ' ' + lab + (f' {e["p"]}' if e.get('p') else ''))
         rows.append(entry(reader_url(href), e['t'], lab, f'{css} data-q="{key}"'))
-    body = f'''<div class="wrap"><section class="block"><h2>全书目录</h2>
+    body = f'''<div class="wrap"><section class="block"><h1>全书目录</h1>
 <p class="note">依原书目录逐条录入。点任意一条，直接翻到原书那一页。</p>
 {search_box('tq', '输入条目、村名或书页码', 'tcount')}
 <div class="list" id="toclist">{"".join(rows)}</div></section></div>
@@ -341,7 +347,7 @@ filterList('tq', 'tcount', '#toclist > a', '条');
         if next_b:
             nav += f'<a class="btn ghost" href="/branch/{next_b["id"]}.html">下一支系 →</a>'
         nav += '</div>'
-        body = f'''<div class="wrap"><nav class="crumb" aria-label="面包屑"><a href="/">首页</a> / <a href="/toc.html">全书目录</a> / <span aria-current="page">{esc(b['t'])}</span></nav><section class="block"><h2>{esc(b['t'])}</h2>
+        body = f'''<div class="wrap"><nav class="crumb" aria-label="面包屑"><a href="/">首页</a> / <a href="/toc.html">全书目录</a> / <span aria-current="page">{esc(b['t'])}</span></nav><section class="block"><h1>{esc(b['t'])}</h1>
 <div class="kv">
 <div><span class="k">所属宗系</span>{esc(b.get('zu',''))}</div>
 <div><span class="k">所属房</span>{esc(b.get('fang',''))}</div>
@@ -369,7 +375,7 @@ filterList('tq', 'tcount', '#toclist > a', '条');
             for e in updates_by_book_village.get(v, []))
         q += ' ' + ' '.join(edition_title(e) for e in updates_by_book_village.get(v, []))
         secs.append(f'<div class="vsec" data-q="{esc(q)}"><div class="grp" id="{esc(v)}">{esc(v)}（{len(bs)} 个支系）{fresh}</div>{links}</div>')
-    body = f'''<div class="wrap"><section class="block"><h2>村庄索引</h2>
+    body = f'''<div class="wrap"><section class="block"><h1>村庄索引</h1>
 <p class="note">按原书世系目录标题中出现的村名整理：同一个村可能有多个房支，同一房支也可能分布在多个村。点村名看该村涉及的支系。</p>
 {search_box('vq', '输入村名或支系名', 'vcount')}
 <div class="list">{"".join(secs)}</div></section></div>
@@ -379,7 +385,7 @@ filterList('vq', 'vcount', '.vsec', '个村');
     w('villages.html', page('村庄索引｜恩平冯氏族谱', body, '按村名查找原书收录的房支，查看对应谱页。', 'villages', url='/villages.html'))
 
     # ---------- buy ----------
-    body = '''<div class="wrap"><section class="block"><h2>购买《恩平冯氏族谱》</h2>
+    body = '''<div class="wrap"><section class="block"><h1>购买《恩平冯氏族谱》</h1>
 <div class="kv">
 <div>本站供宗亲免费在线查阅全书图片。</div>
 <div>如需购买全书电子版（PDF 全本），请加微信联系：</div>
@@ -393,11 +399,13 @@ filterList('vq', 'vcount', '.vsec', '个村');
                   'from': b['p'] + BOOK_OFFSET, 'to': (b.get('end') or b['p']) + BOOK_OFFSET}
                  for b in branches]
     body = f'''
+<div class="wrap">
 {reader_toolbar('/toc.html', '返回目录', BOOK_MAX, page_label='书页')}
 <div class="readerwrap">
 <button id="singlePage" class="reader-image" type="button" aria-label="放大当前谱页"><img class="pageimg" id="pg" alt="族谱原书页"></button>
 <div id="scrollView" style="display:none"></div>
 <div class="pagenav"><a id="prev" href="#">← 上一页</a><a id="next" href="#">下一页 →</a></div>
+</div>
 </div>
 <dialog id="imageDialog" class="image-dialog" aria-labelledby="imageLabel">
 <div class="image-toolbar"><span id="imageLabel"></span><button type="button" id="imageZoom">放大查看</button><button type="button" id="imageClose">关闭</button></div>
