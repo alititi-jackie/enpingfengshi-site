@@ -3,11 +3,15 @@
     "villageId": "v000100",
     "village": "小湴村",
     "town": "良西镇",
-    "aliases": ["小滘", "小滘村"],
+    "aliases": [
+      "小滘",
+      "小滘村"
+    ],
     "bookVillage": "良西镇小湴村",
     "branch": "凝斋房",
     "year": 2026,
     "archiveId": "a000100",
-    "source": "小湴村凝斋房 2026 年更新资料，由族谱持有人提供。"
+    "source": "小湴村凝斋房 2026 年更新资料，由族谱持有人提供。",
+    "bookFile": "xiaobao2026.pdf"
   }
 ]

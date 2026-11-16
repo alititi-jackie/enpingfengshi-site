@@ -125,7 +125,7 @@ def build_editions(root, site, page, write, entry, search_box, old_villages):
         breadcrumb = (f'<p class="edition-crumb"><a href="{INDEX}">村庄更新资料</a> › '
                       f'<a href="{village_path(edition)}">{escape(village)}</a></p>')
         back = f'<p class="edition-crumb"><a href="{base}">{escape(title)}</a></p>'
-        book = media_url('book.pdf')
+        book = media_url(edition.get('bookFile', 'book.pdf'))
         catalog, person_rows = [], []
         for p in persons.values():
             pid = p['id']
@@ -195,20 +195,33 @@ def build_editions(root, site, page, write, entry, search_box, old_villages):
         originals = ''.join(f'<figure id="original-{number}"><figcaption>{label}</figcaption>'
                             f'{image_button(src, label)}</figure>'
                             for number, (src, label) in enumerate(original_pages, 1))
+        changes_file = data / 'changes.json'
+        changes = read_json(changes_file) if changes_file.is_file() else []
+        changes_link = changes_section = ''
+        if changes:
+            changes_link = '<p><a href="#changes">查看修改记录</a></p>'
+            groups = []
+            for group in changes:
+                items = ''.join(f'<li>{escape(item)}</li>' for item in group['items'])
+                groups.append(f'<h3>{escape(group["date"])}</h3><ul>{items}</ul>')
+            changes_section = (
+                '<section id="changes" class="block"><h2>修改记录</h2>'
+                '<p>以下是宗亲核对后对网站人物资料和重排谱页所作的更正。'
+                '原谱照片保留原貌。</p>' + ''.join(groups) + '</section>')
         publish(f'{base}originals/', f'原谱档案 · {title}',
                 f'{back}<section class="block"><h1>原谱档案 · {escape(title)}</h1>'
-                f'{originals}</section>{image_dialog()}', index=False)
+                f'{changes_link}{originals}</section>{changes_section}{image_dialog()}', index=False)
         publish(base, title,
                 f'{breadcrumb}<section class="block"><h1>{escape(title)}</h1>'
                 f'<p>{escape(edition["source"])}</p><p>{escape(archive["rights"])}</p>'
                 f'<p class="edition-links"><a href="{base}search/">查姓名</a>'
-                f'<a href="{base}read/">整版阅读</a><a href="{book}" download>下载整版 PDF</a>'
-                f'<a href="{base}originals/">原谱档案</a></p>'
+                f'<a href="{base}read/">整版阅读</a><a href="{book}" download>下载整版 PDF</a></p>'
                 '<h2>在本档案中查姓名</h2>'
                 f'{search_box("editionName", "输入姓名或人物编号", "editionCount")}'
                 f'<div class="list edition-inline-people">{"".join(person_rows)}</div>'
                 '<script>filterList("editionName", "editionCount", ".edition-person", "位人物", false);</script>'
-                f'<h2>图式谱页</h2><div class="cards edition-catalog">{"".join(catalog)}</div></section>')
+                f'<h2>图式谱页</h2><div class="cards edition-catalog">{"".join(catalog)}</div>'
+                f'<p><a class="btn" href="{base}originals/">原谱档案</a></p></section>')
 
     village_rows = []
     for village_editions in by_village.values():
