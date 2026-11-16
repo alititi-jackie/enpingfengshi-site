@@ -18,9 +18,7 @@ jobs:
           persist-credentials: false
       - run: |
           dest=editions/v000100/2026/a000100
-          mkdir -p "$dest/data"
-          cp import-source/data/{archives,archive_pages,persons,person_sources,relationships,revisions}.json "$dest/data/"
-          cp -R import-source/public/archives/a000100 "$dest/media"
+          cp import-source/public/archives/a000100/book.pdf "$dest/media/book.pdf"
           git add -f "$dest/media/book.pdf"
           git -c user.name=github-actions -c user.email=41898282+github-actions[bot]@users.noreply.github.com commit -m "Import Xiaowan Ningzhai 2026 archive"
           git push origin HEAD:refs/heads/village-editions
