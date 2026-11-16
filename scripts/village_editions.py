@@ -50,12 +50,11 @@ def build_editions(root, site, page, write, entry, search_box, old_villages):
     by_village = defaultdict(list)
     search_entries, sitemap = [], []
 
-    def publish(url, title, body, *, index=True):
+    def publish(url, title, body, desc, *, index=True):
         if index:
             sitemap.append(url)
-        document = page(title, f'<div class="wrap edition">{body}</div>', active='editions')
-        if not index:
-            document = document.replace('<title>', '<meta name="robots" content="noindex">\n<title>', 1)
+        document = page(title, f'<div class="wrap edition">{body}</div>', desc,
+                        active='editions', url=url, index=index)
         write(f'{url.lstrip("/")}index.html', document)
 
     for edition in sorted(editions, key=lambda item: (-item['year'], item['villageId'], item['archiveId'])):
@@ -148,12 +147,14 @@ def build_editions(root, site, page, write, entry, search_box, old_villages):
                     f'<p>{escape(" · ".join(filter(None, (title, generation, pid))))}</p>'
                     f'<p>{escape(p.get("notes") or "")}</p><h2>原谱依据</h2><div class="list">{origins}</div></section>'
                     f'<section class="block"><h2>祖先关系</h2>{ancestors}'
-                    f'<h2>后代关系</h2>{descendants}</section>')
+                    f'<h2>后代关系</h2>{descendants}</section>',
+                    f'查阅{name}在{title}中的人物资料、世系关系和谱页出处。', index=False)
         publish(f'{base}search/', f'查姓名 · {title}',
                 f'{back}<section class="block"><h1>查姓名</h1><p>{escape(title)}</p>'
                 f'{search_box("editionName", "输入姓名或人物编号", "editionCount")}'
                 f'<div class="list">{"".join(person_rows)}</div></section>'
-                '<script>filterList("editionName", "editionCount", ".edition-person", "位人物");</script>')
+                '<script>filterList("editionName", "editionCount", ".edition-person", "位人物");</script>',
+                f'按姓名或人物编号查找{title}收录的人物。', index=False)
 
         rendered = []
         for item in pages:
@@ -174,7 +175,7 @@ def build_editions(root, site, page, write, entry, search_box, old_villages):
                     f'<a href="{base}originals/#original-{sequence}">查看本页原图</a></p>'
                     f'{image_button(jpg, label, eager=True)}</section>'
                     f'<section class="block"><h2>本页人物</h2><div class="list">{people_on_sheet}</div></section>'
-                    f'{image_dialog()}')
+                    f'{image_dialog()}', f'查看{title}的{label}与本页人物。')
 
         book_front = [(media_url('bookpages/cover.webp'), '封面'), (media_url('bookpages/fanli.webp'), '凡例')]
         book_index = [(media_url(f'bookpages/{file.name}'), f'全名索引 {number}')
@@ -191,7 +192,8 @@ def build_editions(root, site, page, write, entry, search_box, old_villages):
                 f'<label>整版页码 <input id="editionPage" type="number" min="1" max="{len(full_book)}" value="1"></label>'
                 '<button type="button" id="editionNext">下一页</button>'
                 '<button type="button" id="editionMode">连续阅读</button></div>'
-                f'<div id="editionBook">{book_figures}</div></section>{image_dialog()}')
+                f'<div id="editionBook">{book_figures}</div></section>{image_dialog()}',
+                f'在线翻阅{title}的封面、凡例、图式谱页和全名索引。', index=False)
         originals = ''.join(f'<figure id="original-{number}"><figcaption>{label}</figcaption>'
                             f'{image_button(src, label)}</figure>'
                             for number, (src, label) in enumerate(original_pages, 1))
@@ -210,7 +212,8 @@ def build_editions(root, site, page, write, entry, search_box, old_villages):
                 '原谱照片保留原貌。</p>' + ''.join(groups) + '</section>')
         publish(f'{base}originals/', f'原谱档案 · {title}',
                 f'{back}<section class="block"><h1>原谱档案 · {escape(title)}</h1>'
-                f'{changes_link}{originals}</section>{changes_section}{image_dialog()}', index=False)
+                f'{changes_link}{originals}</section>{changes_section}{image_dialog()}',
+                f'查看{title}的原谱照片与修改记录。', index=False)
         publish(base, title,
                 f'{breadcrumb}<section class="block"><h1>{escape(title)}</h1>'
                 f'<p>{escape(edition["source"])}</p><p>{escape(archive["rights"])}</p>'
@@ -221,7 +224,8 @@ def build_editions(root, site, page, write, entry, search_box, old_villages):
                 f'<div class="list edition-inline-people">{"".join(person_rows)}</div>'
                 '<script>filterList("editionName", "editionCount", ".edition-person", "位人物", false);</script>'
                 f'<h2>图式谱页</h2><div class="cards edition-catalog">{"".join(catalog)}</div>'
-                f'<p><a class="btn" href="{base}originals/">原谱档案</a></p></section>')
+                f'<p><a class="btn" href="{base}originals/">原谱档案</a></p></section>',
+                f'{edition["town"]}{village}{edition["branch"]}更新族谱，收录 {len(pages)} 张谱页，可查姓名、看世系。')
 
     village_rows = []
     for village_editions in by_village.values():
@@ -235,7 +239,8 @@ def build_editions(root, site, page, write, entry, search_box, old_villages):
         publish(url, first['village'],
                 f'<p class="edition-crumb"><a href="{INDEX}">村庄更新资料</a></p>'
                 f'<section class="block"><h1>{escape(first["village"])}</h1>'
-                f'{old_link}<div class="list">{rows}</div></section>')
+                f'{old_link}<div class="list">{rows}</div></section>',
+                f'查阅{first["town"]}{first["village"]}历年增修的族谱资料。')
 
     year_rows = []
     for year in sorted({e['year'] for e in editions}, reverse=True):
@@ -243,5 +248,6 @@ def build_editions(root, site, page, write, entry, search_box, old_villages):
         year_rows.append(f'<h2>{year} 年</h2><div class="list">{rows}</div>')
     publish(INDEX, '村庄更新资料', '<section class="block"><h1>村庄更新资料</h1>'
             f'<h2>按村庄查阅</h2><div class="list">{"".join(village_rows)}</div>'
-            f'{"".join(year_rows)}</section>')
+            f'{"".join(year_rows)}</section>',
+            '按村庄和年份查阅各村后续增修的族谱资料。')
     return search_entries, sitemap, by_village
