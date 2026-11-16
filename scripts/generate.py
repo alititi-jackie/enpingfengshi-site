@@ -209,7 +209,10 @@ def build(data):
         zu_cards += f'<a class="card" href="{href}"><div class="big">{zu}</div><div class="small">{desc}</div></a>'
     body = f'''
 <div class="hero">
-<h1>寻根溯源 <span class="hero-separator">·</span> 世系传承</h1>
+<div class="hero-heading">
+<p class="hero-eyebrow">恩平冯氏宗亲 · 数字族谱档案</p>
+<h1>寻根溯源 · 世系传承</h1>
+</div>
 {search_box('q', '输入村名、房支、书页码或新版人名')}<div id="searchResults" role="status"></div>
 <div class="home-quick-links">
 <a href="/reader.html?p=1">从第一页开始</a>
