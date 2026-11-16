@@ -7,6 +7,7 @@ on:
 
 permissions:
   contents: read
+  actions: read
   pages: write
   id-token: write
 
@@ -20,18 +21,51 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Generate site
+        run: python3 scripts/generate.py
+
+      - name: Restore rendered original book
+        id: book-cache
+        uses: actions/cache@v4
+        with:
+          path: site/pages
+          key: enping-original-b-20261114-200dpi-${{ hashFiles('.github/workflows/build.yml') }}
+
+      - name: Reuse the currently published original book for this retry
+        if: steps.book-cache.outputs.cache-hit != 'true' && github.event.before == '10fc523997cd6cbd20e974c4d511f4a0a65f746e'
+        id: published-book
+        uses: actions/download-artifact@v4
+        continue-on-error: true
+        with:
+          name: github-pages
+          path: work/previous
+          run-id: 43759585430
+          github-token: ${{ github.token }}
+
+      - name: Restore only the original book images
+        if: steps.published-book.outcome == 'success'
+        id: restored-book
+        continue-on-error: true
+        run: |
+          tar -xf work/previous/artifact.tar -C work/previous --wildcards './pages/p*.webp'
+          test "$(find work/previous/pages -maxdepth 1 -name 'p*.webp' | wc -l)" -eq 1301
+          mv work/previous/pages site/pages
+
       - name: Install tools
+        if: steps.book-cache.outputs.cache-hit != 'true' && steps.restored-book.outcome != 'success'
         run: |
           sudo apt-get update -qq
           sudo apt-get install -y -qq poppler-utils fonts-noto-cjk > /dev/null
           pip install --quiet pillow
 
       - name: Download book PDF from Release
+        if: steps.book-cache.outputs.cache-hit != 'true' && steps.restored-book.outcome != 'success'
         run: |
           curl -sL -o book.pdf "https://github.com/alititi-jackie/enpingfengshi-site/releases/download/b-20261114/1996.pdf"
           ls -la book.pdf
 
       - name: Render pages to WebP (200 DPI)
+        if: steps.book-cache.outputs.cache-hit != 'true' && steps.restored-book.outcome != 'success'
         run: |
           mkdir -p work site/pages
           pdftoppm -r 200 -png book.pdf work/pg
@@ -50,9 +84,6 @@ jobs:
               os.remove(f)
           PYEOF
           du -sh site/pages
-
-      - name: Generate site
-        run: python3 scripts/generate.py
 
       - uses: actions/upload-pages-artifact@v3
         with:
