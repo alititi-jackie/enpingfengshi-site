@@ -335,7 +335,7 @@ filterList('vq', 'vcount', '.vsec', '个村');
 <div class="kv">
 <div>本站供宗亲免费在线查阅全书图片。</div>
 <div>如需购买全书电子版（PDF 全本），请发邮件联系。</div>
-<div style="font-size:22px;color:#742f32;font-weight:700;margin:10px 0"><a href="mailto:323748@gmail.com" style="color:inherit">323748@gmail.com</a></div>
+<div style="font-size:22px;color:#742f32;font-weight:700;margin:10px 0"><a href="mailto:323748@gmail.com" style="color:inherit">点击购买</a></div>
 <div>邮件主题可填写「购买恩平冯氏族谱」。</div>
 </div></section></div>'''
     w('buy.html', page('购买联系｜恩平冯氏族谱', body, '《恩平冯氏族谱》全书电子版的购买联系信息。', 'buy', url='/buy.html'))
