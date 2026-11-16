@@ -87,8 +87,15 @@ function sharePage(){ var u = location.href, t = document.title;
   else if (navigator.clipboard) { navigator.clipboard.writeText(u).then(function(){ alert('链接已复制'); }); } }
 </script>'''
 
+HOME_FOOT = FOOT.replace(
+    '<span>本站内容依《恩平冯氏族谱》原书制作，供宗亲查阅。</span>',
+    f'<strong>本站原书版本 ·《恩平冯氏族谱》1995 年重修版</strong><br>'
+    f'<span>本站的全书目录、房支和村庄记录均据此版整理。各村后续增修资料另标年份，'
+    f'可在<a href="{INDEX}">「村庄更新资料」</a>中查阅。</span>',
+)
+
 def page(title, body, desc='', active=''):
-    return head(title, desc) + header(active) + body + FAB + FOOT
+    return head(title, desc) + header(active) + body + FAB + (HOME_FOOT if active == 'home' else FOOT)
 
 def load_data():
     with open(os.path.join(ROOT, 'data', 'toc.json'), encoding='utf-8') as f:
