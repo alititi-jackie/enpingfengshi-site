@@ -160,7 +160,15 @@ def build_editions(root, site, page, write, entry, old_villages, reader_toolbar)
                 f'{back}<section class="block"><h1>查姓名</h1><p>{escape(title)}</p>'
                 f'{indexed_search(index_url, browse=True)}</section>',
                 f'按姓名或人物编号查找{title}收录的人物。', index=False)
-        inline_search = indexed_search(index_url)
+        page_rows = {
+            str(item.get('printedPageLabel') or item['sequence']): {
+                't': f"谱页 {item['sequence']} · {item['chartHeader']}",
+                'url': sheet_url(item['id']),
+                'detail': f"原印页码：{item['printedPageLabel']}" if item.get('printedPageLabel') else '',
+            } for item in pages
+        }
+        page_index = publish_index(write, f'{base.lstrip("/")}page-index.json', page_rows)
+        inline_search = indexed_search(index_url, page_index=page_index)
         rendered = []
         for position, item in enumerate(pages):
             pid = item['id']
@@ -236,7 +244,7 @@ def build_editions(root, site, page, write, entry, old_villages, reader_toolbar)
                 f'<p>{escape(edition["source"])}</p>{profile_link}<p>{escape(archive["rights"])}</p>'
                 f'<p class="edition-links"><a href="{base}search/">查姓名</a>'
                 f'<a href="{base}read/">整版阅读</a><a href="{book}" download>下载整版 PDF</a></p>'
-                f'<h2>在本档案中查姓名</h2>{inline_search}'
+                f'<h2>在本档案中查姓名或谱页</h2>{inline_search}'
                 f'<h2 id="sheets">图式谱页</h2><div class="cards edition-catalog theme-catalog">{"".join(catalog)}</div>'
                 f'<p><a class="btn" href="{base}originals/">原谱档案</a></p></section>',
                 f'{edition["town"]}{village}{edition["branch"]}更新族谱，收录 {len(pages)} 张谱页，可查姓名、看世系。')

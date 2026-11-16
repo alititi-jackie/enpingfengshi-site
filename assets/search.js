@@ -12,9 +12,8 @@ const requestIndex = (() => {
   };
 })();
 
-function findPeople(rows, term, allowBareNumber = false) {
-  const pattern = allowBareNumber ? /^p?(\d+)$/ : /^p(\d+)$/;
-  const number = term.match(pattern);
+function findPeople(rows, term) {
+  const number = term.match(/^p(\d+)$/);
   if (number) return rows.filter(row => Number(row.id.slice(1)) === Number(number[1]));
   return rows.filter(row => normalizeQuery(row.t + ' ' + row.k).includes(term))
     .sort((a, b) => Number(normalizeQuery(b.t) === term) - Number(normalizeQuery(a.t) === term));
@@ -66,7 +65,16 @@ for (const form of document.querySelectorAll('[data-search-index]')) {
         if (current !== revision) return;
         hits = [...collections, ...original, ...findPeople(groups.flat(), term).slice(0, 12)];
       } else {
-        hits = all ? data : findPeople(data, term, true);
+        const pageNumber = form.dataset.pageIndex && term.match(/^(?:第)?(\d+)(?:页)?$/);
+        if (pageNumber) {
+          const pages = await requestIndex(form.dataset.pageIndex);
+          if (current !== revision) return;
+          const match = pages[Number(pageNumber[1])];
+          status.textContent = match ? '' : '暂未找到这个谱页页码。';
+          if (match) appendSearchResult(box, match);
+          return;
+        }
+        hits = all ? data : findPeople(data, form.dataset.pageIndex || !/^\d+$/.test(term) ? term : 'p' + term);
       }
       const limit = all || isHome ? hits.length : 50;
       status.textContent = hits.length
