@@ -96,7 +96,7 @@ def head(title, desc, url, index):
 <meta name="twitter:description" content="{esc(desc)}">
 <meta name="twitter:image" content="{ORIGIN}/assets/share-logo.png">
 <link rel="icon" type="image/svg+xml" href="/favicon.svg">
-<link rel="stylesheet" href="/assets/style.css">
+<link rel="stylesheet" href="/assets/style.css?v=hero-left-1">
 <script src="/assets/site.js"></script>
 </head>
 <body>'''
@@ -208,10 +208,11 @@ def build(data):
         href = f"/branch/{first['id']}.html" if first else '/toc.html'
         zu_cards += f'<a class="card" href="{href}"><div class="big">{zu}</div><div class="small">{desc}</div></a>'
     body = f'''
-<div class="hero">
+<div class="wrap hero">
 <div class="hero-heading">
 <p class="hero-eyebrow">恩平冯氏宗亲 · 数字族谱档案</p>
-<h1>寻根溯源 · 世系传承</h1>
+<h1>寻根有据，世系有源。</h1>
+<p class="hero-intro">从一页家谱，读懂一家人的来处。留存珍贵原谱，让宗亲记忆代代相传。</p>
 </div>
 {search_box('q', '输入村名、房支、书页码或新版人名')}<div id="searchResults" role="status"></div>
 <div class="home-quick-links">
