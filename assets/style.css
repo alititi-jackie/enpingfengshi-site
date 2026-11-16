@@ -134,9 +134,7 @@ body.scrollmode .readerbar{position:sticky;top:48px;z-index:40;box-shadow:0 2px 
 .image-viewport img.zoomed{max-width:none;max-height:none;width:1509px;height:auto;margin:0 auto}
 
 .edition-crumb { margin: 1rem 0; }
-.edition-links, .edition-reader-controls { display: flex; flex-wrap: wrap; gap: .65rem 1rem; align-items: center; }
-.edition-reader-controls input { width: 5em; }
-.edition-reader-controls button { font: inherit; cursor: pointer; }
+.edition-links { display: flex; flex-wrap: wrap; gap: .65rem 1rem; align-items: center; }
 .edition-catalog img { display: block; width: 100%; height: auto; margin-bottom: .55rem; }
 .edition figure { margin: 1.25rem 0; }
 .edition figcaption { margin-bottom: .5rem; }
@@ -148,3 +146,22 @@ body.scrollmode .readerbar{position:sticky;top:48px;z-index:40;box-shadow:0 2px 
 #searchResults a.edition-result .pg, .edition .list a .pg { white-space: normal; }
 #searchResults a.edition-result .pg { flex-shrink: 1; text-align: right; }
 .edition-inline-people a:not([style]) { display: none; }
+
+.reader-spacer{flex:1}
+.edition-readerbar .nav,.edition-readerbar button,.edition-readerbar .info{white-space:nowrap}
+#editionBook figure{scroll-margin-top:calc(48px + 60px)}
+#editionBook .pageimg{aspect-ratio:auto 1241/1754}
+.edition .pagenav button{flex:1;padding:10px;border:1px solid var(--red);border-radius:8px;
+  background:var(--red);color:#fff;font:inherit;cursor:pointer}
+.edition .pagenav button:disabled{opacity:.45;cursor:default}
+.edition-sheet-nav{display:flex;gap:1rem;flex-wrap:wrap;margin-bottom:12px}
+.edition-sheet-nav a{text-decoration:underline;text-underline-offset:.2em}
+#sheets{scroll-margin-top:60px}
+@media(max-width:650px){
+  .edition-readerbar{column-gap:4px;padding:6px 4px}
+  body:not(.jumpon) .edition-readerbar{flex-wrap:nowrap}
+  .edition-readerbar button,.edition-readerbar a.nav{font-size:13px;padding:7px 5px}
+  .edition-readerbar .modes button{padding:7px 5px}
+  .edition-readerbar .info{font-size:12px}
+  #editionBook figure{scroll-margin-top:calc(44px + 48px)}
+}

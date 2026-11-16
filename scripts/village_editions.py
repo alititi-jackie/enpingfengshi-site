@@ -27,11 +27,12 @@ def edition_title(edition):
     return f"{edition['village']}{edition['branch']} · {edition['year']} 版"
 
 
-def image_button(src, label, *, eager=False):
+def image_button(src, label, *, eager=False, dimensions=None):
     loading = 'eager' if eager else 'lazy'
+    size = f' width="{dimensions[0]}" height="{dimensions[1]}"' if dimensions else ''
     return (f'<button type="button" class="reader-image edition-image" data-image="{escape(src)}" '
             f'data-label="{escape(label)}" aria-label="放大查看{escape(label)}">'
-            f'<img class="pageimg" src="{escape(src)}" alt="{escape(label)}" loading="{loading}"></button>')
+            f'<img class="pageimg" src="{escape(src)}" alt="{escape(label)}" loading="{loading}"{size}></button>')
 
 
 def image_dialog():
@@ -42,7 +43,7 @@ def image_dialog():
 <script src="/assets/edition-reader.js"></script>'''
 
 
-def build_editions(root, site, page, write, entry, search_box, old_villages):
+def build_editions(root, site, page, write, entry, search_box, old_villages, reader_toolbar):
     editions = read_json(Path(root) / 'data/village-editions.json')
     paths = [edition_path(edition) for edition in editions]
     if len(set(paths)) != len(paths):
@@ -156,8 +157,16 @@ def build_editions(root, site, page, write, entry, search_box, old_villages):
                 '<script>filterList("editionName", "editionCount", ".edition-person", "位人物");</script>',
                 f'按姓名或人物编号查找{title}收录的人物。', index=False)
 
+        inline_search = (
+            '<form class="searchbox" id="editionPersonSearch">'
+            '<input id="editionName" type="search" placeholder="输入姓名或编号" aria-label="输入姓名或编号" autocomplete="off">'
+            '<button type="submit">搜索</button></form>'
+            '<div class="vcount" id="editionCount" role="status"></div>'
+            f'<div class="list edition-inline-people">{"".join(person_rows)}</div>'
+            '<script>filterList("editionName", "editionCount", ".edition-person", "位人物", false);'
+            'document.getElementById("editionPersonSearch").addEventListener("submit", event => event.preventDefault());</script>')
         rendered = []
-        for item in pages:
+        for position, item in enumerate(pages):
             pid = item['id']
             sequence = item['sequence']
             label = f"谱页 {sequence} · {item['chartHeader']}"
@@ -169,11 +178,19 @@ def build_editions(root, site, page, write, entry, search_box, old_villages):
             people_on_sheet = ''.join(entry(person_url(person['id']), person['originalName'], '')
                                       for person in persons.values()
                                       if any(source['archivePageId'] == pid for source in sources[person['id']]))
+            previous = (f'<a href="{sheet_url(pages[position - 1]["id"])}">← 上一张</a>'
+                        if position else '')
+            following = (f'<a href="{sheet_url(pages[position + 1]["id"])}">下一张 →</a>'
+                         if position + 1 < len(pages) else '')
+            printed = item.get('printedPageLabel')
+            printed_label = f' · 原印页码：{escape(str(printed))}' if printed else ''
             publish(sheet_url(pid), f'{label} · {title}',
-                    f'{back}<section class="block"><h1>{escape(label)}</h1>'
-                    f'<p><a href="{pdf}" download>下载本页 PDF</a> · '
-                    f'<a href="{base}originals/#original-{sequence}">查看本页原图</a></p>'
-                    f'{image_button(jpg, label, eager=True)}</section>'
+                    f'{back}{inline_search}<section class="block"><h1>{escape(label)}</h1>'
+                    f'<p>影像序号 {position + 1} / {len(pages)}{printed_label}</p>'
+                    f'<nav class="edition-sheet-nav" aria-label="谱页导航">{previous}'
+                    f'<a href="{base}#sheets">页码目录</a>{following}</nav>'
+                    f'{image_button(jpg, label, eager=True)}'
+                    f'<p><a class="btn" href="{pdf}" download>下载本页 PDF</a></p></section>'
                     f'<section class="block"><h2>本页人物</h2><div class="list">{people_on_sheet}</div></section>'
                     f'{image_dialog()}', f'查看{title}的{label}与本页人物。')
 
@@ -183,16 +200,17 @@ def build_editions(root, site, page, write, entry, search_box, old_villages):
                                                           key=lambda part: int(part.stem.split('-')[-1])), 1)]
         full_book = book_front + rendered + book_index
         book_figures = ''.join(f'<figure data-sheet="{number}"><figcaption>{escape(label)}</figcaption>'
-                               f'{image_button(src, label, eager=number == 1)}</figure>'
+                               f'{image_button(src, label, eager=number == 1, dimensions=(1241, 1754))}</figure>'
                                for number, (src, label) in enumerate(full_book, 1))
         publish(f'{base}read/', f'整版阅读 · {title}',
                 f'{back}<section class="block"><h1>整版阅读 · {escape(title)}</h1>'
-                f'<p><a href="{book}" download>下载整版 PDF</a></p>'
-                '<div class="edition-reader-controls"><button type="button" id="editionPrev">上一页</button>'
-                f'<label>整版页码 <input id="editionPage" type="number" min="1" max="{len(full_book)}" value="1"></label>'
-                '<button type="button" id="editionNext">下一页</button>'
-                '<button type="button" id="editionMode">连续阅读</button></div>'
-                f'<div id="editionBook">{book_figures}</div></section>{image_dialog()}',
+                f'<p>全书共 {len(full_book)} 页，含封面、凡例、图式谱页和全名索引。'
+                f'<a href="{book}" download>下载整版 PDF</a></p>'
+                f'{reader_toolbar(base, "返回档案", len(full_book), edition=True)}'
+                f'<div id="editionBook">{book_figures}</div>'
+                '<div class="pagenav"><button type="button" id="editionPrev">← 上一页</button>'
+                '<button type="button" id="editionNext">下一页 →</button></div>'
+                f'</section>{image_dialog()}',
                 f'在线翻阅{title}的封面、凡例、图式谱页和全名索引。', index=False)
         originals = ''.join(f'<figure id="original-{number}"><figcaption>{label}</figcaption>'
                             f'{image_button(src, label)}</figure>'
@@ -219,11 +237,8 @@ def build_editions(root, site, page, write, entry, search_box, old_villages):
                 f'<p>{escape(edition["source"])}</p><p>{escape(archive["rights"])}</p>'
                 f'<p class="edition-links"><a href="{base}search/">查姓名</a>'
                 f'<a href="{base}read/">整版阅读</a><a href="{book}" download>下载整版 PDF</a></p>'
-                '<h2>在本档案中查姓名</h2>'
-                f'{search_box("editionName", "输入姓名或人物编号", "editionCount")}'
-                f'<div class="list edition-inline-people">{"".join(person_rows)}</div>'
-                '<script>filterList("editionName", "editionCount", ".edition-person", "位人物", false);</script>'
-                f'<h2>图式谱页</h2><div class="cards edition-catalog">{"".join(catalog)}</div>'
+                f'<h2>在本档案中查姓名</h2>{inline_search}'
+                f'<h2 id="sheets">图式谱页</h2><div class="cards edition-catalog">{"".join(catalog)}</div>'
                 f'<p><a class="btn" href="{base}originals/">原谱档案</a></p></section>',
                 f'{edition["town"]}{village}{edition["branch"]}更新族谱，收录 {len(pages)} 张谱页，可查姓名、看世系。')
 

@@ -41,6 +41,25 @@ def search_box(field, hint, count=None):
     button = '' if count else '<button id="go" type="button">搜索</button>'
     return f'<div class="searchbox"><input id="{field}" type="text" placeholder="{esc(hint)}" aria-label="{esc(hint)}" autocomplete="off">{button}</div>{status}'
 
+def reader_toolbar(back_url, back_label, maximum, *, page_label='页码', edition=False):
+    extra_class = ' edition-readerbar' if edition else ''
+    info = f'<b>1</b>/{maximum}<span class="full-only"> · 封面</span>' if edition else ''
+    branch_info = '' if edition else '<span class="info" id="branchInfo"></span>'
+    expanded = ' aria-expanded="false"' if edition else ''
+    selected = ' class="on" aria-pressed="true"' if edition else ''
+    return f'''<div class="readerbar{extra_class}">
+<a class="nav" href="{esc(back_url)}">{esc(back_label)}</a>
+<span class="info" id="info" aria-live="polite">{info}</span>
+{branch_info}
+<span class="reader-spacer"></span>
+<span class="modes"><button id="mSingle" type="button">单页</button><button id="mScroll" type="button"{selected}>连看</button></span>
+<button id="jumpToggle" type="button"{expanded}>跳页</button>
+<label class="info jumpctl">{esc(page_label)} <input id="jump" type="number" min="1" max="{maximum}"></label>
+<button class="primary" id="jumpBtn">跳页</button>
+</div>
+'''
+
+
 def entry(href, title, detail, attributes=''):
     return f'<a{attributes} href="{esc(href)}"><span>{esc(title)}</span><span class="pg">{esc(detail)}</span></a>'
 
@@ -84,7 +103,7 @@ def head(title, desc, url, index):
 
 def header(active=''):
     links = [('首页', '/', 'home'), ('目录', '/toc.html', 'toc'), ('村庄', '/villages.html', 'villages'),
-             ('村庄更新资料', INDEX, 'editions'), ('资讯', 'https://fengshizupu.com/news/', 'news'), ('主站', 'https://fengshizupu.com', 'main')]
+             ('新谱', INDEX, 'editions'), ('资讯', 'https://fengshizupu.com/news/', 'news'), ('主站', 'https://fengshizupu.com', 'main')]
     parts = []
     for t, u, k in links:
         cls = ' class="on"' if k == active else ''
@@ -155,7 +174,7 @@ def build(data):
     by_id = {b['id']: b for b in branches}
     villages = {name: [by_id[i] for i in ids] for name, ids in data.get('villages', {}).items()}
     edition_results, edition_urls, updated_villages = build_editions(
-        ROOT, SITE, page, w, entry, search_box, villages)
+        ROOT, SITE, page, w, entry, search_box, villages, reader_toolbar)
     updates_by_book_village = {}
     for editions in updated_villages.values():
         for edition in editions:
@@ -370,16 +389,7 @@ filterList('vq', 'vcount', '.vsec', '个村');
                   'from': b['p'] + BOOK_OFFSET, 'to': (b.get('end') or b['p']) + BOOK_OFFSET}
                  for b in branches]
     body = f'''
-<div class="readerbar">
-<a class="nav" href="/toc.html">返回目录</a>
-<span class="info" id="info"></span>
-<span class="info" id="branchInfo"></span>
-<span style="flex:1"></span>
-<span class="modes"><button id="mSingle" type="button">单页</button><button id="mScroll" type="button">连看</button></span>
-<button id="jumpToggle" type="button">跳页</button>
-<label class="info jumpctl">书页 <input id="jump" type="number" min="1" max="{BOOK_MAX}"></label>
-<button class="primary" id="jumpBtn">跳页</button>
-</div>
+{reader_toolbar('/toc.html', '返回目录', BOOK_MAX, page_label='书页')}
 <div class="readerwrap">
 <button id="singlePage" class="reader-image" type="button" aria-label="放大当前谱页"><img class="pageimg" id="pg" alt="族谱原书页"></button>
 <div id="scrollView" style="display:none"></div>
