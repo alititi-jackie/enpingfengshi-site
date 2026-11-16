@@ -22,7 +22,9 @@ a:active{opacity:.7}
 .mainnav button.share{background:none;border:0;font:inherit;color:var(--red);cursor:pointer;padding:4px 1px;white-space:nowrap}
 @media(max-width:650px){.brandbar{padding:16px 0 10px}.mainnav-in{gap:19px;height:44px;font-size:15.5px}}
 .hero{text-align:center;padding:24px 16px 0}
-.hero h1{margin:0;font-size:28px;line-height:1.3;color:var(--red)}
+.hero h1{display:inline-flex;align-items:baseline;gap:.15em;white-space:nowrap;
+  margin:0;font-size:min(52px,calc((100vw - 32px) / 9));line-height:1.3;color:var(--red)}
+.hero-separator{width:.5em;text-align:center}
 .searchbox{margin:20px auto 6px;max-width:1160px;display:flex;gap:8px}
 .searchbox input{flex:1;padding:12px 14px;font-size:16px;border:1.5px solid var(--red);
   border-radius:10px;background:#fff;font-family:inherit;min-width:0}
@@ -78,7 +80,11 @@ footer.site{border-top:1px solid var(--line);margin-top:36px;padding:18px 16px 3
 .kv div{margin:3px 0}
 .kv .k{color:var(--muted);font-size:13px;margin-right:8px}
 /* floating buttons, toc & villages fixes, footer main-site link (2026-11-14) */
-footer.site a{color:var(--red);text-decoration:underline;text-underline-offset:.15em}
+footer.site a{color:var(--red);text-decoration:none;white-space:nowrap}
+.about-content{max-width:760px;margin-inline:auto}
+section.about-content h2{margin-top:1.5rem}
+.about-content li+li{margin-top:.4rem}
+.about-content a{text-decoration:underline;text-underline-offset:.15em}
 .fab{position:fixed;right:14px;bottom:20px;display:flex;flex-direction:column;gap:10px;z-index:60}
 .fab button{width:44px;height:44px;border-radius:50%;border:1px solid #d8cfc0;
   background:rgba(255,255,255,.94);color:var(--red);font-size:19px;line-height:1;

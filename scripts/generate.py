@@ -84,11 +84,12 @@ def head(title, desc, url, index):
 
 def header(active=''):
     links = [('首页', '/', 'home'), ('目录', '/toc.html', 'toc'), ('村庄', '/villages.html', 'villages'),
-             ('村庄更新资料', INDEX, 'editions'), ('购买', '/buy.html', 'buy'), ('主站', 'https://fengshizupu.com', 'main')]
+             ('村庄更新资料', INDEX, 'editions'), ('资讯', 'https://fengshizupu.com/news/', 'news'), ('主站', 'https://fengshizupu.com', 'main')]
     parts = []
     for t, u, k in links:
         cls = ' class="on"' if k == active else ''
-        parts.append(f'<a href="{u}"{cls}>{t}</a>')
+        external = ' target="_blank" rel="noopener"' if k == 'news' else ''
+        parts.append(f'<a href="{u}"{cls}{external}>{t}</a>')
     nav = ''.join(parts) + '<button class="share" type="button" onclick="sharePage()">分享</button>'
     return f'''<header class="brandbar"><div class="wrap">
 <a class="brand" href="/"><img src="/assets/icon.svg" alt="冯" width="46" height="46"><span>恩平冯氏族谱<small>enping.fengshizupu.com</small></span></a>
@@ -96,7 +97,7 @@ def header(active=''):
 <nav class="mainnav"><div class="wrap mainnav-in">{nav}</div></nav>'''
 
 FOOT = '''<footer class="site">恩平冯氏族谱 · 在线查阅<br>
-<strong>本站原书版本 ·《恩平冯氏族谱》1995 年重修版</strong><br>
+<strong>本站原书版本 ·《恩平冯氏族谱》1995 年重修版</strong> · <a href="/buy.html">购买电子版</a><br>
 全国数字族谱平台 · <a href="https://fengshizupu.com/">fengshizupu.com</a> · <a href="/about/">关于本站</a>
 </footer>
 </body></html>'''
@@ -189,7 +190,7 @@ def build(data):
         zu_cards += f'<a class="card" href="{href}"><div class="big">{zu}</div><div class="small">{desc}</div></a>'
     body = f'''
 <div class="hero">
-<h1>寻根溯源 · 世系传承</h1>
+<h1>寻根溯源 <span class="hero-separator">·</span> 世系传承</h1>
 {search_box('q', '输入村名、房支、书页码或新版人名')}<div id="searchResults" role="status"></div>
 <div class="home-quick-links">
 <a href="/reader.html?p=1">从第一页开始</a>
@@ -204,6 +205,7 @@ def build(data):
 <a class="card" href="/reader.html?p=1247"><div class="big">第四章</div><div class="small">文献、文物</div></a>
 </div></section>
 <section class="block"><h2>这本书</h2><div class="kv">
+<div>查找恩平族谱、恩平宗谱或恩平家谱的宗亲，可在下方了解原书版本，再按村名、房支或原书页码找谱。</div>
 <div>《恩平冯氏族谱》，恩平冯氏族谱重修筹委会编，1995 年付梓。全书四章，正文 1,269 页：源流、世系、人物业绩、文献文物。</div>
 <div>世系章收复春、宁邦、万辅三大宗系及各房支系，分布于恩平各镇村。本站按原书顺序逐页呈现，可按目录、房支、村庄查找，也可直接输入书页码翻到那一页。</div>
 </div></section>
@@ -264,7 +266,7 @@ if (incomingQuery !== null && incomingQuery.trim() !== '') {{
   if (!jumpNum()) run();
 }}
 </script>'''
-    w('index.html', page('恩平冯氏族谱 · 1995 年重修版', body,
+    w('index.html', page('恩平冯氏族谱（1995 年重修版）｜在线查阅', body,
                          '在线查阅《恩平冯氏族谱》1995 年重修版，按目录、房支、村庄或书页码找谱。', 'home', url='/'))
 
     # ---------- toc ----------
@@ -553,14 +555,23 @@ setMode(mode);
 
     # ---------- about ----------
     about = f'''<div class="wrap">
-<section class="block"><h1>关于本站</h1>
-<p>恩平冯氏族谱在线查阅站供宗亲寻根查谱。可按<a href="/toc.html">目录和房支</a>、<a href="/villages.html">村庄</a>或书页码查找原书。</p>
-<h2>原书版本</h2>
-<p>本站的全书目录、房支、村庄记录和原书影像以《恩平冯氏族谱》1995 年重修版为底本。原谱序记载，此次修谱于 1992 年启动，1995 年脱稿付梓。<a href="/reader.html?p=4">查看原谱卷首第 4 页</a>。</p>
-<h2>村庄更新资料</h2>
-<p>小湴村凝斋房 2026 版是该房的更新资料，可查姓名、看世系和核对谱页。各村后续增修资料按村庄、房支和年份整理，见<a href="{INDEX}">村庄更新资料</a>。</p>
-<h2>更正与补充</h2>
-<p>如发现错漏或有资料补充，请注明村名、房支、版本、谱页和相关依据。联系渠道见<a href="https://fengshizupu.com/about/">冯氏族谱主站的「关于」页</a>。</p>
+<section class="block about-content">
+<h1>关于本站</h1>
+<p>恩平冯氏族谱在线查阅站方便宗亲从村名、房支或书页码找谱。查找恩平族谱、恩平宗谱或恩平家谱时，可先核对自己要找的村名和房支，再选择原书或村庄更新资料。</p>
+<h2>1995 年重修版从哪里来</h2>
+<p>本站的全书目录、房支、村庄记录和原书影像，以《恩平冯氏族谱》1995 年重修版为底本。按原谱序记载，恩平冯氏修谱筹备委员会于 1992 年成立，组织编纂小组开展修谱工作，历时近三年，于 1995 年脱稿付梓。<a href="/reader.html?p=4">查看原谱卷首第 4 页</a>。</p>
+<p>原书正文共 1,269 页，分为源流及现状、世系、人物业绩和文献文物四章。世系章载有复春系、宁邦房、万辅祖等宗系及下辖房支。</p>
+<h2>怎样找 1995 年原书</h2>
+<ul>
+<li><strong>知道村名。</strong>打开<a href="/villages.html">村庄索引</a>，查该村在原书中涉及的房支，再打开对应谱页。同一个村可能对应多个房支。</li>
+<li><strong>知道房支或章节。</strong>打开<a href="/toc.html">全书目录</a>，选择要找的章节或房支，按原书顺序查阅。</li>
+<li><strong>知道原书页码。</strong>在<a href="/">首页搜索框</a>输入纸本上印的页码，点击「搜索」直达该页。</li>
+</ul>
+<h2>怎样查村庄更新资料</h2>
+<p>各村后续增修的族谱按村庄、房支和年份整理，在<a href="{INDEX}">村庄更新资料</a>集中查阅。小湴村凝斋房 2026 版是这一房的更新资料，原书中的小湴村和凝斋房记录也可照常查阅。</p>
+<p>打开<a href="{INDEX}v000100/">小湴村更新资料</a>，进入凝斋房 2026 版，输入姓名或人物编号。遇到同名人物时，可先核对世次，再从人物页查看祖先、后代关系与对应谱页。需要对照原谱照片时，可在档案页底部进入「原谱档案」，里面也列有已公开的修改记录。</p>
+<h2>怎样反馈更正或补充资料</h2>
+<p>请注明村名、房支和版本，附原书页码或新版谱页编号。若涉及人物，最好加上人物编号、建议更正的内容和相关出处。照片或其他资料请说明来源和可公开的范围。联系渠道见<a href="https://fengshizupu.com/about/">冯氏族谱主站的「关于」页</a>。</p>
 </section></div>'''
     w('about/index.html', page('关于本站｜恩平冯氏族谱', about,
                               '了解恩平冯氏族谱在线查阅站、1995 年重修版的来源、村庄更新资料及更正方式。', url='/about/'))
