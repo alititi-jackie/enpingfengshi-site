@@ -5,6 +5,7 @@ from html import escape
 import json
 from pathlib import Path
 import shutil
+from search_markup import indexed_search, publish_index
 from urllib.parse import quote
 
 
@@ -35,22 +36,25 @@ def image_button(src, label, *, eager=False, dimensions=None):
             f'<img class="pageimg" src="{escape(src)}" alt="{escape(label)}" loading="{loading}"{size}></button>')
 
 
-def image_dialog():
-    return '''<dialog id="imageDialog" class="image-dialog" aria-labelledby="imageLabel">
+def image_dialog(edition=True):
+    markup = '''<dialog id="imageDialog" class="image-dialog" aria-labelledby="imageLabel">
 <div class="image-toolbar"><span id="imageLabel"></span><button type="button" id="imageZoom">放大查看</button><button type="button" id="imageClose">关闭</button></div>
 <div class="image-viewport"><img id="imageLarge" alt=""></div>
-</dialog>
-<script src="/assets/edition-reader.js"></script>'''
+</dialog>'''
+    if not edition:
+        return markup
+    return markup + ('<script src="/assets/reader-controls.js?v=1" defer></script>'
+                     '<script src="/assets/edition-reader.js?v=2" defer></script>')
 
 
-def build_editions(root, site, page, write, entry, search_box, old_villages, reader_toolbar):
+def build_editions(root, site, page, write, entry, old_villages, reader_toolbar):
     editions = read_json(Path(root) / 'data/village-editions.json')
     paths = [edition_path(edition) for edition in editions]
     if len(set(paths)) != len(paths):
         raise ValueError('Duplicate village edition path')
     profiles = read_json(Path(root) / 'data/village-profiles.json')
     by_village = defaultdict(list)
-    search_entries, sitemap = [], []
+    search_entries, person_indexes, sitemap = [], [], []
 
     def publish(url, title, body, desc, *, index=True):
         if index:
@@ -129,7 +133,7 @@ def build_editions(root, site, page, write, entry, search_box, old_villages, rea
         back = (f'<nav class="crumb" aria-label="面包屑"><a href="/">首页</a> / '
                 f'<a href="{base}">{escape(title)}</a></nav>')
         book = media_url(edition.get('bookFile', 'book.pdf'))
-        catalog, person_rows = [], []
+        catalog, people_index = [], []
         for p in persons.values():
             pid = p['id']
             name = p['originalName']
@@ -137,10 +141,7 @@ def build_editions(root, site, page, write, entry, search_box, old_villages, rea
             first = pages_by_id[sources[pid][0]['archivePageId']]['sequence']
             detail = ' · '.join(filter(None, (title, generation, f'谱页第 {first} 张')))
             person_keys = ' '.join([pid, p['normalizedName'], *p.get('aliases', [])])
-            search_entries.append({'t': name, 'k': person_keys, 'kind': 'person', 'url': person_url(pid),
-                                   'detail': detail})
-            person_rows.append(entry(person_url(pid), name, detail,
-                                     f' class="edition-person" data-q="{escape(name + " " + person_keys)}"'))
+            people_index.append({'id': pid, 't': name, 'k': person_keys, 'url': person_url(pid), 'detail': detail})
             origins = ''.join(entry(sheet_url(s['archivePageId']),
                                     f"查看第 {pages_by_id[s['archivePageId']]['sequence']} 张谱页",
                                     s['transcription']) for s in sources[pid])
@@ -153,21 +154,13 @@ def build_editions(root, site, page, write, entry, search_box, old_villages, rea
                     f'<section class="block"><h2>祖先关系</h2>{ancestors}'
                     f'<h2>后代关系</h2>{descendants}</section>',
                     f'查阅{name}在{title}中的人物资料、世系关系和谱页出处。', index=False)
+        index_url = publish_index(write, f'{base.lstrip("/")}person-index.json', people_index)
+        person_indexes.append(index_url)
         publish(f'{base}search/', f'查姓名 · {title}',
                 f'{back}<section class="block"><h1>查姓名</h1><p>{escape(title)}</p>'
-                f'{search_box("editionName", "输入姓名或人物编号", "editionCount")}'
-                f'<div class="list">{"".join(person_rows)}</div></section>'
-                '<script>filterList("editionName", "editionCount", ".edition-person", "位人物");</script>',
+                f'{indexed_search(index_url, browse=True)}</section>',
                 f'按姓名或人物编号查找{title}收录的人物。', index=False)
-
-        inline_search = (
-            '<form class="searchbox" id="editionPersonSearch">'
-            '<input id="editionName" type="search" placeholder="输入姓名或编号" aria-label="输入姓名或编号" autocomplete="off">'
-            '<button type="submit">搜索</button></form>'
-            '<div class="vcount" id="editionCount" role="status"></div>'
-            f'<div class="list edition-inline-people">{"".join(person_rows)}</div>'
-            '<script>filterList("editionName", "editionCount", ".edition-person", "位人物", false);'
-            'document.getElementById("editionPersonSearch").addEventListener("submit", event => event.preventDefault());</script>')
+        inline_search = indexed_search(index_url)
         rendered = []
         for position, item in enumerate(pages):
             pid = item['id']
@@ -285,4 +278,4 @@ def build_editions(root, site, page, write, entry, search_box, old_villages, rea
             f'<h2>按村庄查阅</h2><div class="list">{"".join(village_rows)}</div>'
             f'{"".join(year_rows)}</section>',
             '按村庄和年份查阅各村后续增修的族谱资料。')
-    return search_entries, sitemap, by_village
+    return search_entries, person_indexes, sitemap, by_village

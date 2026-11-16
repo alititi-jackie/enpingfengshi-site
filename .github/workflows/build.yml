@@ -7,7 +7,6 @@ on:
 
 permissions:
   contents: read
-  actions: read
   pages: write
   id-token: write
 
@@ -20,70 +19,56 @@ jobs:
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
-
       - name: Generate site
         run: python3 scripts/generate.py
 
+      - name: Read the original book source
+        id: book
+        run: |
+          python3 - <<'PY' >> "$GITHUB_OUTPUT"
+          import json
+          source = json.load(open('data/book-pagination.json'))['source']
+          print('sha=' + source['sha256'])
+          print('url=https://github.com/alititi-jackie/enpingfengshi-site/releases/download/' +
+                source['release'] + '/' + source['filename'])
+          PY
+
       - name: Restore rendered original book
-        id: book-cache
         uses: actions/cache@v4
         with:
           path: site/pages
-          key: enping-original-b-20261114-200dpi-${{ hashFiles('.github/workflows/build.yml') }}
+          key: enping-original-${{ steps.book.outputs.sha }}-${{ hashFiles('scripts/render_book.py') }}
+          restore-keys: |
+            ${{ steps.book.outputs.sha == '5be0b6079e8b070c1ff0f9db47e9f8bc785e7e6f5816e5a408198efd4235ee25' && hashFiles('scripts/render_book.py') == 'a6ad2662a1e776b424e478b47d00c77032051817b80c1ced3a01e8f855398946' && 'enping-original-b-20261114-200dpi-' || '' }}
 
-      - name: Reuse the currently published original book for this retry
-        if: steps.book-cache.outputs.cache-hit != 'true' && github.event.before == '10fc523997cd6cbd20e974c4d511f4a0a65f746e'
-        id: published-book
-        uses: actions/download-artifact@v4
-        continue-on-error: true
-        with:
-          name: github-pages
-          path: work/previous
-          run-id: 43759585430
-          github-token: ${{ github.token }}
-
-      - name: Restore only the original book images
-        if: steps.published-book.outcome == 'success'
-        id: restored-book
-        continue-on-error: true
+      - name: Check the cached scans
+        id: scans
         run: |
-          tar -xf work/previous/artifact.tar -C work/previous --wildcards './pages/p*.webp'
-          test "$(find work/previous/pages -maxdepth 1 -name 'p*.webp' | wc -l)" -eq 1301
-          mv work/previous/pages site/pages
+          if python3 scripts/check_site.py --scans-only; then
+            echo 'ready=true' >> "$GITHUB_OUTPUT"
+          fi
 
-      - name: Install tools
-        if: steps.book-cache.outputs.cache-hit != 'true' && steps.restored-book.outcome != 'success'
+      - name: Render the original book
+        if: steps.scans.outputs.ready != 'true'
+        env:
+          ORIGINAL_BOOK_URL: ${{ steps.book.outputs.url }}
         run: |
           sudo apt-get update -qq
           sudo apt-get install -y -qq poppler-utils fonts-noto-cjk > /dev/null
           pip install --quiet pillow
+          mkdir -p work
+          curl --fail --location --retry 3 "$ORIGINAL_BOOK_URL" -o work/book.pdf
+          python3 scripts/render_book.py work/book.pdf site/pages
 
-      - name: Download book PDF from Release
-        if: steps.book-cache.outputs.cache-hit != 'true' && steps.restored-book.outcome != 'success'
-        run: |
-          curl -sL -o book.pdf "https://github.com/alititi-jackie/enpingfengshi-site/releases/download/b-20261114/1996.pdf"
-          ls -la book.pdf
+      - name: Validate links, page images and sitemap
+        run: python3 scripts/check_site.py
 
-      - name: Render pages to WebP (200 DPI)
-        if: steps.book-cache.outputs.cache-hit != 'true' && steps.restored-book.outcome != 'success'
+      - name: Test desktop and mobile reading flows
         run: |
-          mkdir -p work site/pages
-          pdftoppm -r 200 -png book.pdf work/pg
-          python3 - << 'PYEOF'
-          from PIL import Image, ImageDraw, ImageFont
-          import glob, os
-          files = sorted(glob.glob('work/pg-*.png'))
-          print('pages:', len(files))
-          font = ImageFont.truetype('/usr/share/fonts/opentype/noto/NotoSerifCJK-Bold.ttc', 30)
-          for i, f in enumerate(files, 1):
-              im = Image.open(f).convert('RGB')
-              d = ImageDraw.Draw(im)
-              color = (255, 255, 255) if i == 1 else (116, 47, 50)
-              d.text((26, 16), '冯氏族谱 · fengshizupu.com', font=font, fill=color)
-              im.save(f'site/pages/p{i:04d}.webp', 'WEBP', quality=80)
-              os.remove(f)
-          PYEOF
-          du -sh site/pages
+          npm install --prefix work/browser --no-package-lock playwright@1.58.2
+          work/browser/node_modules/.bin/playwright install chromium --with-deps
+          python3 -m http.server 4173 --bind 127.0.0.1 --directory site &
+          NODE_PATH="$PWD/work/browser/node_modules" node tests/browser.cjs
 
       - uses: actions/upload-pages-artifact@v3
         with:

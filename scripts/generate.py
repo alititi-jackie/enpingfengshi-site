@@ -10,29 +10,23 @@ by the workflow before this script runs; this script does not touch them.
 """
 import json, os, re, shutil, html
 from hashlib import sha256
-from village_editions import INDEX, build_editions, edition_path, edition_title
+from urllib.parse import quote
+from book_pagination import load_pagination
+from search_markup import indexed_search, publish_index
+from village_editions import INDEX, build_editions, edition_path, edition_title, image_dialog
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SITE = os.path.join(ROOT, 'site')
-TOTAL_PDF = 1301
-BOOK_OFFSET = 30          # book page N = PDF page N+30
-BOOK_MAX = 1269
+PAGES, NUMERIC_LOOKUP, SECTION_LINKS = load_pagination(os.path.join(ROOT, 'data', 'book-pagination.json'))
+BOOK_MAX = max(NUMERIC_LOOKUP)
 
-RED = '#742f32'
 
 def esc(s):
     return html.escape(str(s), quote=True)
 
+
 def label_for_pdf(n):
-    if n <= 17:
-        return f'卷首第{n}页'
-    if n <= 30:
-        return f'目录第{n-17}页'
-    if n <= 43:
-        return f'目录第{n-30}页'
-    if n <= BOOK_MAX + BOOK_OFFSET:
-        return f'书第{n-BOOK_OFFSET}页'
-    return '封底'
+    return PAGES[n]['label']
 
 def reader_url(pdf_page):
     return f'/reader.html?p={pdf_page}'
@@ -146,26 +140,14 @@ def load_data():
     with open(os.path.join(ROOT, 'data', 'toc.json'), encoding='utf-8') as f:
         return json.load(f)
 
-def extract_villages(branches):
-    """Pull town/village names out of branch titles."""
-    vmap = {}
-    pat = re.compile(r'([一-龥]{2,4}镇)?([一-龥]{2,5}村)')
-    for b in branches:
-        found = set()
-        for m in pat.finditer(b['t']):
-            name = (m.group(1) or '') + m.group(2)
-            if len(m.group(2)) >= 2 and m.group(2) not in ('本村',):
-                found.add(name)
-        for v in found:
-            vmap.setdefault(v, []).append(b)
-    return dict(sorted(vmap.items(), key=lambda kv: -len(kv[1])))
-
 def build(data):
     os.makedirs(SITE, exist_ok=True)
     os.makedirs(os.path.join(SITE, 'assets'), exist_ok=True)
     os.makedirs(os.path.join(SITE, 'branch'), exist_ok=True)
     shutil.copy(os.path.join(ROOT, 'assets', 'site.js'), os.path.join(SITE, 'assets', 'site.js'))
     shutil.copy(os.path.join(ROOT, 'assets', 'style.css'), os.path.join(SITE, 'assets', 'style.css'))
+    for asset in ('search.js', 'reader-controls.js', 'original-reader.js'):
+        shutil.copy(os.path.join(ROOT, 'assets', asset), os.path.join(SITE, 'assets', asset))
     shutil.copy(THEME_FILE, os.path.join(SITE, 'assets', 'genealogy-theme.css'))
     shutil.copy(os.path.join(ROOT, 'assets', 'icon.svg'), os.path.join(SITE, 'assets', 'icon.svg'))
     shutil.copy(os.path.join(ROOT, 'favicon.svg'), os.path.join(SITE, 'favicon.svg'))
@@ -179,8 +161,8 @@ def build(data):
     all_entries = data['all']
     by_id = {b['id']: b for b in branches}
     villages = {name: [by_id[i] for i in ids] for name, ids in data.get('villages', {}).items()}
-    edition_results, edition_urls, updated_villages = build_editions(
-        ROOT, SITE, page, w, entry, search_box, villages, reader_toolbar)
+    edition_results, person_indexes, edition_urls, updated_villages = build_editions(
+        ROOT, SITE, page, w, entry, villages, reader_toolbar)
     updates_by_book_village = {}
     for editions in updated_villages.values():
         for edition in editions:
@@ -191,22 +173,35 @@ def build(data):
             branch_villages.setdefault(b['id'], []).append(name)
 
     # ---------- index ----------
+    def page_result(title, scan, key=''):
+        return {'t': title, 'k': key, 'url': reader_url(scan), 'detail': label_for_pdf(scan)}
+
     search_data = []
-    for e in all_entries:
-        if e.get('p'):
-            search_data.append({'t': e['t'], 'p': e['p'], 'kind': 'toc'})
-        elif e.get('pdf'):
-            search_data.append({'t': e['t'], 'pdf': e['pdf'], 'kind': 'toc'})
-    for b in branches:
-        vs = branch_villages.get(b['id'], [])
-        kw = ' '.join(vs)
-        if any('小湴' in v for v in vs):
-            kw += ' 小滘 小滘村'
-        search_data.append({'t': b['t'], 'p': b['p'], 'kind': 'branch', 'id': b['id'],
-                            'zu': b.get('zu', ''), 'fang': b.get('fang', ''), 'k': kw})
-    for v, bs in villages.items():
-        kw = '小滘 小滘村' if '小湴' in v else ''
-        search_data.append({'t': v, 'p': bs[0]['p'], 'kind': 'village', 'k': kw})
+    for item in all_entries:
+        if scan := item.get('pdf') or NUMERIC_LOOKUP.get(item.get('p')):
+            search_data.append(page_result(item['t'], scan))
+    for branch in branches:
+        names = branch_villages.get(branch['id'], [])
+        aliases = ' 小滘 小滘村' if any('小湴' in name for name in names) else ''
+        search_data.append({
+            't': branch['t'], 'k': ' '.join(names) + aliases,
+            'url': f'/branch/{branch["id"]}.html',
+            'detail': f'{branch.get("zu", "")} {branch.get("fang", "")} · {label_for_pdf(NUMERIC_LOOKUP[branch["p"]])}',
+        })
+    for name, refs in villages.items():
+        search_data.append({
+            't': name, 'k': '小滘 小滘村' if '小湴' in name else '',
+            'url': f'/villages.html#{quote(name)}',
+            'detail': '村庄 · ' + label_for_pdf(NUMERIC_LOOKUP[refs[0]['p']]),
+        })
+    for section, scan in SECTION_LINKS:
+        search_data.append(page_result(section, scan))
+    for scan in (3, 1299, 1300):
+        search_data.append(page_result(label_for_pdf(scan), scan))
+    homepage_index = publish_index(w, 'assets/search-index.json', {
+        'original': search_data, 'editions': edition_results, 'people': person_indexes,
+        'numeric': {number: page_result(label_for_pdf(scan), scan) for number, scan in NUMERIC_LOOKUP.items()},
+    })
     zu_cards = ''
     for zu, desc in [('复春系', '九房 · 书第32–890页'), ('宁邦房', '一至二十世 · 书第891–977页'),
                      ('万辅祖', '一至十六世 · 书第978–1070页')]:
@@ -220,7 +215,7 @@ def build(data):
 <h1>寻根有据，世系有源。</h1>
 <p class="hero-intro">从一页家谱，读懂一家人的来处。留存珍贵原谱，让宗亲记忆代代相传。</p>
 </div>
-{search_box('q', '输入村名、房支、书页码或新版人名')}<div id="searchResults" role="status"></div>
+{indexed_search(homepage_index, home=True)}
 <div class="home-quick-links">
 <a href="/reader.html?p=1">从第一页开始</a>
 <a href="/toc.html">查看全书目录</a>
@@ -241,60 +236,7 @@ def build(data):
 <section class="block"><h2>找自己在哪一房</h2><div class="kv">
 <div>先在家里的老谱、祠堂或长辈口中问清：属于哪个镇、哪个村、哪一房。再用上方搜索框输入村名或房名，找到对应支系，从支系第一页往下翻，就能顺着世系图找到自己这一支。</div>
 </div></section>
-</div>
-<script>
-const DATA = {json.dumps(search_data, ensure_ascii=False)};
-const EDITIONS = {json.dumps(edition_results, ensure_ascii=False).replace('<', chr(92) + 'u003c')};
-const q = document.getElementById('q'), box = document.getElementById('searchResults');
-function run(){{
-  const s = normalizeQuery(q.value); box.innerHTML = '';
-  if(!s) return;
-  if(/^\\d+$/.test(s)){{ const bp = parseInt(s);
-    if(bp>=1 && bp<={BOOK_MAX}){{ box.innerHTML = '<a href="' + readerURL(bp + {BOOK_OFFSET}) + '">打开原书第 ' + bp + ' 页<span class="pg">书页直达 · 点这里翻过去</span></a>'; }}
-    else {{ box.innerHTML = '<a>书页码在 1–' + {BOOK_MAX} + ' 之间</a>'; }}
-    return; }}
-  const hits = DATA.filter(d => normalizeQuery(d.t + ' ' + (d.k || '')).includes(s)).slice(0, 12);
-  const editionHits = EDITIONS.filter(d => d.kind === 'edition' &&
-    normalizeQuery(d.t + ' ' + d.k).includes(s));
-  const people = EDITIONS.filter(d => d.kind === 'person' &&
-    normalizeQuery(d.t + ' ' + d.k).includes(s)).sort((a, b) =>
-      Number(normalizeQuery(b.t) === s) - Number(normalizeQuery(a.t) === s)).slice(0, 12);
-  if(!hits.length && !editionHits.length && !people.length){{ box.innerHTML = '<a>暂未找到相关记录，请换个关键词或查看全书目录</a>'; return; }}
-  box.innerHTML = '<p>显示 ' + (hits.length + editionHits.length + people.length) + ' 条相关记录</p>' + hits.map(d => {{
-    const href = d.kind === 'branch' ? '/branch/' + d.id + '.html' :
-                 d.kind === 'village' ? '/villages.html#' + encodeURIComponent(d.a || d.t) :
-                 d.pdf ? readerURL(d.pdf) : readerURL(d.p + {BOOK_OFFSET});
-    const tag = d.kind === 'branch' ? (d.zu + ' ' + d.fang) : (d.kind === 'village' ? '村庄' : '目录');
-    const pg = d.pdf ? '卷首' : '书第' + d.p + '页';
-    return '<a href="' + href + '">' + d.t + '<span class="pg">' + tag + ' · ' + pg + '</span></a>';
-  }}).join('');
-  function appendEditionResult(d, before) {{
-    const link = document.createElement('a');
-    link.href = d.url;
-    link.className = 'edition-result';
-    link.textContent = d.t;
-    const detail = document.createElement('span');
-    detail.className = 'pg';
-    detail.textContent = d.detail;
-    link.append(detail);
-    box.insertBefore(link, before);
-  }}
-  const firstOriginal = box.querySelector('a');
-  for (const edition of editionHits) appendEditionResult(edition, firstOriginal);
-  for (const person of people) appendEditionResult(person, null);
-}}
-function jumpNum(){{ const s = normalizeQuery(q.value);
-  if(/^\\d+$/.test(s)){{ const bp = parseInt(s); if(bp>=1 && bp<={BOOK_MAX}){{ location.href = readerURL(bp + {BOOK_OFFSET}); return true; }} }}
-  return false; }}
-document.getElementById('go').onclick = () => {{ if(!jumpNum()) run(); }};
-q.addEventListener('input', run);
-q.addEventListener('keydown', e => {{ if(e.key === 'Enter' && !jumpNum()) run(); }});
-const incomingQuery = new URLSearchParams(window.location.search).get('q');
-if (incomingQuery !== null && incomingQuery.trim() !== '') {{
-  q.value = incomingQuery.trim();
-  if (!jumpNum()) run();
-}}
-</script>'''
+</div>'''
     w('index.html', page('恩平冯氏族谱（1995 年重修版）｜在线查阅', body,
                          '在线查阅《恩平冯氏族谱》1995 年重修版，按目录、房支、村庄或书页码找谱。', 'home', url='/'))
 
@@ -303,7 +245,8 @@ if (incomingQuery !== null && incomingQuery.trim() !== '') {{
         if e.get('pdf'):
             return e['pdf'], label_for_pdf(e['pdf'])
         if e.get('p'):
-            return e['p'] + BOOK_OFFSET, f'书第{e["p"]}页'
+            scan = NUMERIC_LOOKUP[e['p']]
+            return scan, label_for_pdf(scan)
         return None
     raw_targets = [target_of(e) for e in all_entries]
     nexts = [None] * len(all_entries)
@@ -339,7 +282,7 @@ filterList('tq', 'tcount', '#toclist > a', '条');
         prev_b = branches[i - 1] if i > 0 else None
         next_b = branches[i + 1] if i + 1 < len(branches) else None
         page_links = ''.join(
-            entry(reader_url(p + BOOK_OFFSET), f'书第{p}页', '看图')
+            entry(reader_url(NUMERIC_LOOKUP[p]), label_for_pdf(NUMERIC_LOOKUP[p]), '看图')
             for p in range(b['p'], (b.get('end') or b['p']) + 1))
         nav = '<div class="btnrow">'
         if prev_b:
@@ -354,7 +297,7 @@ filterList('tq', 'tcount', '#toclist > a', '条');
 <div><span class="k">原书页码</span>书第{b['p']}页{(' 至第' + str(b['end']) + '页') if b.get('end') and b['end'] != b['p'] else ''}</div>
 {('<div><span class="k">涉及村庄</span>' + '、'.join('<a href="/villages.html#' + esc(v) + '">' + esc(v) + '</a>' for v in branch_villages.get(b['id'], [])) + '</div>') if branch_villages.get(b['id']) else ''}
 </div>
-<div class="btnrow"><a class="btn" href="{reader_url(b['p'] + BOOK_OFFSET)}">从本支系第一页看起</a></div>
+<div class="btnrow"><a class="btn" href="{reader_url(NUMERIC_LOOKUP[b['p']])}">从本支系第一页看起</a></div>
 <h2 style="font-size:17px">本支系各页</h2><div class="list">{page_links}</div>
 {nav}</section></div>'''
         branch_path = f'/branch/{b["id"]}.html'
@@ -395,184 +338,28 @@ filterList('vq', 'vcount', '.vsec', '个村');
     w('buy.html', page('购买联系｜恩平冯氏族谱', body, '《恩平冯氏族谱》全书电子版的购买联系信息。', 'buy', url='/buy.html'))
 
     # ---------- reader ----------
-    branch_js = [{'id': b['id'], 't': b['t'], 'zu': b.get('zu', ''), 'fang': b.get('fang', ''),
-                  'from': b['p'] + BOOK_OFFSET, 'to': (b.get('end') or b['p']) + BOOK_OFFSET}
-                 for b in branches]
+    branch_js = [{
+        'id': b['id'], 't': b['t'], 'from': NUMERIC_LOOKUP[b['p']],
+        'to': NUMERIC_LOOKUP[b.get('end') or b['p']],
+    } for b in branches]
+    reader_data = json.dumps({
+        'pages': PAGES, 'numeric': NUMERIC_LOOKUP, 'branches': branch_js, 'start': NUMERIC_LOOKUP[1],
+    }, ensure_ascii=False, separators=(',', ':')).replace('<', r'\u003c')
+    sections = ''.join(f'<a href="{reader_url(scan)}">{esc(name)}</a>' for name, scan in SECTION_LINKS)
     body = f'''
 <div class="wrap">
-{reader_toolbar('/toc.html', '返回目录', BOOK_MAX, page_label='书页')}
+<nav class="edition-sheet-nav" aria-label="原书分区">{sections}</nav>
+{reader_toolbar('/toc.html', '返回目录', BOOK_MAX, page_label='原书页码')}
 <div class="readerwrap">
 <button id="singlePage" class="reader-image" type="button" aria-label="放大当前谱页"><img class="pageimg" id="pg" alt="族谱原书页"></button>
 <div id="scrollView" style="display:none"></div>
 <div class="pagenav"><a id="prev" href="#">← 上一页</a><a id="next" href="#">下一页 →</a></div>
 </div>
 </div>
-<dialog id="imageDialog" class="image-dialog" aria-labelledby="imageLabel">
-<div class="image-toolbar"><span id="imageLabel"></span><button type="button" id="imageZoom">放大查看</button><button type="button" id="imageClose">关闭</button></div>
-<div class="image-viewport"><img id="imageLarge" alt=""></div>
-</dialog>
-<script>
-if('scrollRestoration' in history) history.scrollRestoration = 'manual';
-const TOTAL = {TOTAL_PDF}, OFF = {BOOK_OFFSET}, BMAX = {BOOK_MAX};
-const BR = {json.dumps(branch_js, ensure_ascii=False)};
-const PAGE_LABELS = {json.dumps([''] + [label_for_pdf(n) for n in range(1, TOTAL_PDF + 1)], ensure_ascii=False)};
-function label(n){{ return PAGE_LABELS[n]; }}
-let p = parseInt(new URLSearchParams(location.search).get('p') || '31');
-if(!(p>=1 && p<=TOTAL)) p = 31;
-const img = document.getElementById('pg');
-const sv = document.getElementById('scrollView');
-function src(n){{ return '/pages/p' + String(n).padStart(4,'0') + '.webp'; }}
-function infoFor(n){{
-  document.getElementById('info').innerHTML = '<b>' + label(n) + '</b><span class="full-only">（全书图第' + n + '页）</span>';
-  const bs = BR.filter(x => n>=x.from && n<=x.to);
-  document.getElementById('branchInfo').innerHTML = bs.length ?
-    '所属支系：' + bs.map(x => '<a href="/branch/' + x.id + '.html"><b>' + x.t + '</b></a>').join('、') : '';
-  const pv = document.getElementById('prev'), nx = document.getElementById('next');
-  pv.className = n<=1 ? 'off' : ''; nx.className = n>=TOTAL ? 'off' : '';
-}}
-function render(){{
-  img.src = src(p);
-  img.alt = '《恩平冯氏族谱》' + label(p);
-  infoFor(p);
-  window.scrollTo(0,0);
-}}
-function sync(){{ history.replaceState(null,'','?p='+p); render(); }}
-let mode = 'scroll';
-try{{ mode = localStorage.getItem('readerMode') || 'scroll'; }}catch(e){{}}
-if(mode !== 'scroll') mode = 'single';
-let lo = 0, hi = 0;
-const WIN = 7;
-function blockHTML(n){{
-  const bs = BR.filter(x => n>=x.from && n<=x.to);
-  const bt = bs.length ? ' · ' + bs.map(x => x.t).join('、') : '';
-  return '<div class="spage" data-p="' + n + '"><div class="scap"><b>' + label(n) + '</b>（全书图第' + n + '页）' + bt + '</div>' +
-    '<button class="reader-image" type="button" aria-label="放大' + label(n) + '"><img class="pageimg" loading="lazy" src="' + src(n) + '" alt="《恩平冯氏族谱》' + label(n) + '"></button></div>';
-}}
-function blockEl(n){{ return sv.querySelector('.spage[data-p="' + n + '"]'); }}
-function buildScroll(center){{
-  lo = Math.max(1, center - WIN); hi = Math.min(TOTAL, center + WIN);
-  let h = ''; for(let n = lo; n <= hi; n++) h += blockHTML(n);
-  sv.innerHTML = h;
-}}
-function barOffset(){{
-  const nav = document.querySelector('.mainnav');
-  const bar = document.querySelector('.readerbar');
-  return (nav ? nav.offsetHeight : 48) + (bar ? bar.offsetHeight : 50) + 6;
-}}
-let holdUntil = 0;
-function scrollToPage(n, smooth){{
-  const el = blockEl(n); if(!el) return;
-  const y = el.getBoundingClientRect().top + window.scrollY - barOffset();
-  holdUntil = Date.now() + 180;
-  window.scrollTo({{ top: y, behavior: smooth ? 'smooth' : 'auto' }});
-}}
-function anchorTop(){{
-  const els = sv.querySelectorAll('.spage');
-  for(let i = 0; i < els.length; i++){{
-    const r = els[i].getBoundingClientRect();
-    if(r.bottom > 0) return {{ n: parseInt(els[i].dataset.p), top: r.top }};
-  }}
-  return null;
-}}
-function restoreAnchor(a){{
-  if(!a) return;
-  const el = blockEl(a.n);
-  if(el) window.scrollBy(0, el.getBoundingClientRect().top - a.top);
-}}
-function currentFromScroll(){{
-  const line = barOffset() + 30;
-  let cur = lo, best = 0;
-  const els = sv.querySelectorAll('.spage');
-  for(let i = 0; i < els.length; i++){{
-    const r = els[i].getBoundingClientRect();
-    if(r.top <= line) cur = parseInt(els[i].dataset.p);
-    if(r.top <= line && r.bottom > line){{ best = parseInt(els[i].dataset.p); break; }}
-  }}
-  return best || cur;
-}}
-let ticking = false;
-function onScroll(){{
-  if(mode !== 'scroll' || ticking) return;
-  ticking = true;
-  requestAnimationFrame(() => {{
-    ticking = false;
-    if(mode !== 'scroll' || Date.now() < holdUntil) return;
-    const cur = currentFromScroll();
-    if(cur !== p){{ p = cur; history.replaceState(null,'','?p='+p); infoFor(p); }}
-    if(hi < TOTAL && hi - p <= 3){{
-      let h = ''; const nhi = Math.min(TOTAL, hi + WIN);
-      for(let n = hi + 1; n <= nhi; n++) h += blockHTML(n);
-      sv.insertAdjacentHTML('beforeend', h); hi = nhi;
-    }}
-    if(lo > 1 && p - lo <= 3){{
-      let h = ''; const nlo = Math.max(1, lo - WIN);
-      for(let n = nlo; n <= lo - 1; n++) h += blockHTML(n);
-      const a = anchorTop();
-      sv.insertAdjacentHTML('afterbegin', h);
-      restoreAnchor(a);
-      lo = nlo;
-    }}
-    if(hi - p > WIN + 10){{
-      const n = p + WIN + 4;
-      sv.querySelectorAll('.spage').forEach(el => {{ if(parseInt(el.dataset.p) > n) el.remove(); }});
-      hi = n;
-    }}
-    if(p - lo > WIN + 10){{
-      const n = p - WIN - 4;
-      const a = anchorTop();
-      sv.querySelectorAll('.spage').forEach(el => {{ if(parseInt(el.dataset.p) < n) el.remove(); }});
-      restoreAnchor(a);
-      lo = n;
-    }}
-  }});
-}}
-window.addEventListener('scroll', onScroll, {{ passive: true }});
-function gotoPage(n, smooth){{
-  p = Math.max(1, Math.min(TOTAL, n));
-  history.replaceState(null,'','?p='+p);
-  if(mode === 'scroll'){{
-    if(p < lo || p > hi) buildScroll(p);
-    infoFor(p);
-    scrollToPage(p, !!smooth);
-  }} else render();
-}}
-function setMode(m){{
-  mode = m;
-  try{{ localStorage.setItem('readerMode', m); }}catch(e){{}}
-  document.getElementById('mSingle').className = m === 'single' ? 'on' : '';
-  document.getElementById('mScroll').className = m === 'scroll' ? 'on' : '';
-  document.body.classList.toggle('scrollmode', m === 'scroll');
-  const single = m === 'single';
-  document.getElementById('singlePage').style.display = single ? '' : 'none';
-  sv.style.display = single ? 'none' : '';
-  if(single) render();
-  else {{ buildScroll(p); infoFor(p); scrollToPage(p, false);
-    requestAnimationFrame(() => {{ if(mode === 'scroll') scrollToPage(p, false); }}); }}
-}}
-document.getElementById('mSingle').onclick = () => setMode('single');
-document.getElementById('mScroll').onclick = () => setMode('scroll');
-document.getElementById('prev').onclick = e => {{ e.preventDefault(); if(p>1){{ if(mode === 'scroll') gotoPage(p - 1, true); else {{ p--; sync(); }} }} }};
-document.getElementById('next').onclick = e => {{ e.preventDefault(); if(p<TOTAL){{ if(mode === 'scroll') gotoPage(p + 1, true); else {{ p++; sync(); }} }} }};
-document.getElementById('jumpToggle').onclick = () => document.body.classList.toggle('jumpon');
-document.getElementById('jumpBtn').onclick = () => {{
-  const v = parseInt(document.getElementById('jump').value);
-  document.body.classList.remove('jumpon');
-  if(v>=1 && v<=BMAX) gotoPage(v + OFF, false); }};
-const imageDialog = bindImageDialog();
-document.getElementById('singlePage').onclick = () => imageDialog.open(src(p), label(p));
-sv.addEventListener('click', e => {{
-  const button = e.target.closest('.reader-image');
-  if (!button) return;
-  const n = Number(button.closest('.spage').dataset.p);
-  imageDialog.open(src(n), label(n));
-}});
-document.addEventListener('keydown', e => {{
-  if(imageDialog.dialog.open) return;
-  if(e.target && e.target.id === 'jump') return;
-  if(e.key==='ArrowLeft' && p>1){{ if(mode === 'scroll') gotoPage(p - 1, true); else {{ p--; sync(); }} }}
-  if(e.key==='ArrowRight' && p<TOTAL){{ if(mode === 'scroll') gotoPage(p + 1, true); else {{ p++; sync(); }} }} }});
-setMode(mode);
-</script>'''
+{image_dialog(edition=False)}
+<script id="originalReaderData" type="application/json">{reader_data}</script>
+<script src="/assets/reader-controls.js?v=1" defer></script>
+<script src="/assets/original-reader.js?v=1" defer></script>'''
     w('reader.html', page('看原书｜恩平冯氏族谱', body, '逐页阅读《恩平冯氏族谱》1995 年重修版原书影像。', 'toc', url='/reader.html', index=False))
 
     # ---------- about ----------

@@ -9,11 +9,8 @@ if (book) {
   const bar = document.querySelector('.edition-readerbar');
   const info = document.getElementById('info');
   const jump = document.getElementById('jump');
-  const jumpToggle = document.getElementById('jumpToggle');
   const previous = document.getElementById('editionPrev');
   const next = document.getElementById('editionNext');
-  const single = document.getElementById('mSingle');
-  const scroll = document.getElementById('mScroll');
   let continuous = true;
   let current = 0;
   let pendingFrame = false;
@@ -31,9 +28,7 @@ if (book) {
     previous.disabled = page === 1;
     next.disabled = page === sheets.length;
     if (document.activeElement !== jump) jump.value = page;
-    const url = new URL(location.href);
-    url.searchParams.set('p', page);
-    if (url.href !== location.href) history.replaceState(null, '', url);
+    updateReaderURL(page);
   }
 
   function go(value, position = true) {
@@ -46,42 +41,16 @@ if (book) {
     }
   }
 
-  function setMode(mode) {
-    continuous = mode;
-    document.body.classList.toggle('scrollmode', mode);
-    for (const [button, selected] of [[single, !mode], [scroll, mode]]) {
-      button.classList.toggle('on', selected);
-      button.setAttribute('aria-pressed', selected);
-    }
-    go(current);
-  }
-
-  function toggleJump(open) {
-    document.body.classList.toggle('jumpon', open);
-    jumpToggle.setAttribute('aria-expanded', open);
-    if (open) jump.focus();
-  }
-
-  function submitJump() {
-    if (!jump.value) return;
-    const target = jump.value;
-    jump.blur();
-    toggleJump(false);
-    go(target);
-  }
-
-  previous.onclick = () => go(current - 1);
-  next.onclick = () => go(current + 1);
-  single.onclick = () => setMode(false);
-  scroll.onclick = () => setMode(true);
-  jumpToggle.onclick = () => toggleJump(!document.body.classList.contains('jumpon'));
-  document.getElementById('jumpBtn').onclick = submitJump;
-  jump.addEventListener('keydown', event => {
-    if (event.key === 'Enter') submitJump();
-    if (event.key === 'Escape') {
-      toggleJump(false);
-      jumpToggle.focus();
-    }
+  const showMode = bindReaderControls({
+    previous, next,
+    move: (value, relative) => go(relative ? current + value : value),
+    setMode(mode) {
+      continuous = mode === 'scroll';
+      showMode(mode);
+      go(current);
+    },
+    jumpTo: value => Number.isInteger(value) && value >= 1 && value <= sheets.length ? value : undefined,
+    dialog: viewer.dialog,
   });
 
   window.addEventListener('scroll', () => {
@@ -100,8 +69,8 @@ if (book) {
     });
   }, { passive: true });
 
-  document.body.classList.add('scrollmode');
-  const initial = Number.parseInt(new URLSearchParams(location.search).get('p'), 10);
+  showMode('scroll');
+  const initial = readerPage(1, sheets.length);
   go(initial, false);
   requestAnimationFrame(() => {
     if (current > 1) go(current);

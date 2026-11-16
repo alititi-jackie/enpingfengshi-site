@@ -2,12 +2,27 @@
 
 《恩平冯氏族谱》在线查阅站：https://enping.fengshizupu.com
 
-- `data/toc.json`：全书目录数据（依原书目录逐条转录：632 条；支系 247 个、村庄 163 个）。
+- `data/toc.json`：全书目录数据（依原书目录逐条转录：634 条；支系 247 个、村庄 163 个）。
 - `scripts/generate.py`：静态站生成器，输出到 `site/`。
-- `.github/workflows/build.yml`：GitHub Actions 构建——从 Release（标签 b-20261114）下载原书 PDF，200 DPI 逐页转 WebP，再生成并部署到 GitHub Pages。分页图不进 git 仓库。
+- `.github/workflows/build.yml`：GitHub Actions 构建——生成 HTML、按原书 SHA-256 和渲染脚本版本复用分页图，验证链接和浏览器操作后部署到 GitHub Pages。分页图不进 git 仓库。
 - Logo / favicon 与 fengshizupu.com 同款（深红底奶油色「冯」字）。
 
-全书页码口径：站内一律用书页码（原书印刷页码），PDF 页 = 书页 + 30。
+## 原书页码和阅读
+
+- `data/book-pagination.json` 是原书页码表。按扫描顺序记录卷首、两组目录、正文、附表和封底。没有印页码的原图直接显示名称或区段内第几张。
+- `reader.html?p=` 始终表示扫描顺序，已发布的网址继续打开同一张图。两组目录各印 1–13。数字搜索与原书跳页优先使用后组目录，以保持以前的跳转目标。正文编号照原书显示。
+- 扫描第 1299 张是目录标为 1269 的汉字繁简对照表，1300 张是续页，1301 张是封底。目录引用和原图上实际印出的页码分别记录。
+- 首页、原书目录和阅读器使用统一页码表。鼠标或键盘使用跳页、翻页与模式切换时，两种阅读器共用控制逻辑。原书连看只保留当前附近页。
+- 首页按需加载原书索引。各册新版的姓名和编号共用各自的 `person-index.json`。首页纯数字按原书页码处理，`p1` 和 `p000001` 查同一个人物。各册查姓名入口也支持直接输入 `1`。
+
+## 本地验证
+
+```sh
+python3 scripts/generate.py
+python3 scripts/check_site.py --without-scans
+```
+
+完整发布检查使用 `python3 scripts/check_site.py`，校验 1301 张原书分页图、站内链接、锚点、搜索索引和站点地图。桌面及手机浏览器测试维护在 `tests/browser.cjs`。
 
 ## 村庄更新资料
 

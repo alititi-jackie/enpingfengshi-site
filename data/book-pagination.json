@@ -1,0 +1,24 @@
+{
+  "source": {
+    "release": "b-20261114",
+    "filename": "1996.pdf",
+    "sha256": "5be0b6079e8b070c1ff0f9db47e9f8bc785e7e6f5816e5a408198efd4235ee25"
+  },
+  "scanCount": 1301,
+  "ranges": [
+    {"first": 1, "last": 17, "section": "卷首"},
+    {"first": 18, "last": 30, "section": "目录（前组）", "printedStart": 1},
+    {"first": 31, "last": 43, "section": "目录（后组）", "printedStart": 1, "numericLookup": true},
+    {"first": 44, "last": 1298, "section": "正文", "printedStart": 14, "numericLookup": true},
+    {"first": 1299, "last": 1300, "section": "书末附表"},
+    {"first": 1301, "last": 1301, "section": "封底"}
+  ],
+  "special": {
+    "1": {"name": "封面"},
+    "3": {"name": "谱序"},
+    "4": {"name": "谱序（续）"},
+    "1299": {"name": "汉字繁简对照表", "tocReference": 1269},
+    "1300": {"name": "汉字繁简对照表（续）"},
+    "1301": {"name": "封底"}
+  }
+}
