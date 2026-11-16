@@ -48,6 +48,7 @@ def build_editions(root, site, page, write, entry, search_box, old_villages, rea
     paths = [edition_path(edition) for edition in editions]
     if len(set(paths)) != len(paths):
         raise ValueError('Duplicate village edition path')
+    profiles = read_json(Path(root) / 'data/village-profiles.json')
     by_village = defaultdict(list)
     search_entries, sitemap = [], []
 
@@ -232,9 +233,12 @@ def build_editions(root, site, page, write, entry, search_box, old_villages, rea
                 f'{back}<section class="block"><h1>原谱档案 · {escape(title)}</h1>'
                 f'{changes_link}{originals}</section>{changes_section}{image_dialog()}',
                 f'查看{title}的原谱照片与修改记录。', index=False)
+        profile_link = ''
+        if edition['villageId'] in profiles:
+            profile_link = f'<p><a href="{village_path(edition)}">查看{escape(village)}资料 →</a></p>'
         publish(base, title,
                 f'{breadcrumb}<section class="block"><h1>{escape(title)}</h1>'
-                f'<p>{escape(edition["source"])}</p><p>{escape(archive["rights"])}</p>'
+                f'<p>{escape(edition["source"])}</p>{profile_link}<p>{escape(archive["rights"])}</p>'
                 f'<p class="edition-links"><a href="{base}search/">查姓名</a>'
                 f'<a href="{base}read/">整版阅读</a><a href="{book}" download>下载整版 PDF</a></p>'
                 f'<h2>在本档案中查姓名</h2>{inline_search}'
@@ -251,11 +255,25 @@ def build_editions(root, site, page, write, entry, search_box, old_villages, rea
         old = first.get('bookVillage')
         old_link = (f'<p><a href="/villages.html#{quote(old)}">查看原书村庄与房支</a></p>'
                     if old in old_villages else '')
-        publish(url, first['village'],
+        profile = profiles.get(first['villageId'])
+        title = first['village']
+        summary = f'查阅{first["town"]}{first["village"]}历年增修的族谱资料。'
+        intro = details = ''
+        if profile:
+            title += '资料'
+            summary = profile['description'] + ' 查阅村庄背景、资料来源及历年增修族谱。'
+            intro = f'<p>{escape(profile["description"])}</p>'
+            details = ''.join(
+                f'<section class="block"><h2>{escape(section["heading"])}</h2>'
+                f'<p>{escape(section["body"])}</p></section>'
+                for section in profile['sections'])
+            if guide := profile.get('guide'):
+                details += (f'<section class="block"><h2>寻根指南</h2>'
+                            f'<p><a href="{escape(guide["url"])}">{escape(guide["label"])}</a></p></section>')
+        publish(url, title,
                 f'<p class="edition-crumb"><a href="{INDEX}">村庄更新资料</a></p>'
-                f'<section class="block"><h1>{escape(first["village"])}</h1>'
-                f'{old_link}<div class="list">{rows}</div></section>',
-                f'查阅{first["town"]}{first["village"]}历年增修的族谱资料。')
+                f'<section class="block"><h1>{escape(title)}</h1>{intro}'
+                f'{old_link}<div class="list">{rows}</div></section>{details}', summary)
 
     year_rows = []
     for year in sorted({e['year'] for e in editions}, reverse=True):
