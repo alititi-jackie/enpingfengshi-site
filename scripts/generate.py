@@ -265,7 +265,150 @@ def build(data):
         if raw_targets[i]:
             prev_t = raw_targets[i]
         href, lab = t
-        css = ' class="grp"' if lvl <= 1 else ' class="note-link"' if not raw_targets[i] else ''
+        # The imported levels also mark numbered subtopics; reserve heading styling for chapter/section labels.
+        heading = re.match(r'^第[一二三四五六七八九十百零〇0-9]+[章节]|^附篇[：:]?
+        key = esc(e['t'] + ' ' + lab + (f' {e["p"]}' if e.get('p') else ''))
+        rows.append(entry(reader_url(href), e['t'], lab, f'{css} data-q="{key}"'))
+    body = f'''<div class="wrap"><section class="block"><h1>全书目录</h1>
+<p class="note">依原书目录逐条录入。点任意一条，直接翻到原书那一页。</p>
+{search_box('tq', '输入条目、村名或书页码', 'tcount')}
+<div class="list" id="toclist">{"".join(rows)}</div></section></div>
+<script>
+filterList('tq', 'tcount', '#toclist > a', '条');
+</script>'''
+    w('toc.html', page('全书目录｜恩平冯氏族谱', body, '查看《恩平冯氏族谱》全书目录，按章节和房支直达原书页。', 'toc', url='/toc.html'))
+
+    # ---------- branch pages ----------
+    for i, b in enumerate(branches):
+        prev_b = branches[i - 1] if i > 0 else None
+        next_b = branches[i + 1] if i + 1 < len(branches) else None
+        page_links = ''.join(
+            entry(reader_url(NUMERIC_LOOKUP[p]), label_for_pdf(NUMERIC_LOOKUP[p]), '看图')
+            for p in range(b['p'], (b.get('end') or b['p']) + 1))
+        nav = '<div class="btnrow">'
+        if prev_b:
+            nav += f'<a class="btn ghost" href="/branch/{prev_b["id"]}.html">← 上一支系</a>'
+        if next_b:
+            nav += f'<a class="btn ghost" href="/branch/{next_b["id"]}.html">下一支系 →</a>'
+        nav += '</div>'
+        body = f'''<div class="wrap"><nav class="crumb" aria-label="面包屑"><a href="/">首页</a> / <a href="/toc.html">全书目录</a> / <span aria-current="page">{esc(b['t'])}</span></nav><section class="block"><h1>{esc(b['t'])}</h1>
+<div class="kv">
+<div><span class="k">所属宗系</span>{esc(b.get('zu',''))}</div>
+<div><span class="k">所属房</span>{esc(b.get('fang',''))}</div>
+<div><span class="k">原书页码</span>书第{b['p']}页{(' 至第' + str(b['end']) + '页') if b.get('end') and b['end'] != b['p'] else ''}</div>
+{('<div><span class="k">涉及村庄</span>' + '、'.join('<a href="/villages.html#' + esc(v) + '">' + esc(v) + '</a>' for v in branch_villages.get(b['id'], [])) + '</div>') if branch_villages.get(b['id']) else ''}
+</div>
+<div class="btnrow"><a class="btn" href="{reader_url(NUMERIC_LOOKUP[b['p']])}">从本支系第一页看起</a></div>
+<h2 style="font-size:17px">本支系各页</h2><div class="list">{page_links}</div>
+{nav}</section></div>'''
+        branch_path = f'/branch/{b["id"]}.html'
+        desc = f'查阅《恩平冯氏族谱》1995 年重修版所载{b["t"]}，从原书第 {b["p"]} 页看起。'
+        w(branch_path.lstrip('/'), page(f'{b["t"]}｜恩平冯氏族谱', body, desc, 'toc', url=branch_path))
+
+    # ---------- villages ----------
+    secs = []
+    for v, bs in villages.items():
+        links = ''.join(
+            entry(f'/branch/{b["id"]}.html', b['t'], f'书第{b["p"]}页')
+            for b in bs)
+        q = v + ' ' + ' '.join(b['t'] for b in bs)
+        if '小湴' in v:
+            q += ' 小滘 小滘村'
+        fresh = ''.join(
+            f' <a class="fresh" href="{edition_path(e)}">{esc(edition_title(e))}</a>'
+            for e in updates_by_book_village.get(v, []))
+        q += ' ' + ' '.join(edition_title(e) for e in updates_by_book_village.get(v, []))
+        secs.append(f'<div class="vsec" data-q="{esc(q)}"><div class="grp" id="{esc(v)}">{esc(v)}（{len(bs)} 个支系）{fresh}</div>{links}</div>')
+    body = f'''<div class="wrap"><section class="block"><h1>村庄索引</h1>
+<p class="note">按原书世系目录标题中出现的村名整理：同一个村可能有多个房支，同一房支也可能分布在多个村。点村名看该村涉及的支系。</p>
+{search_box('vq', '输入村名或支系名', 'vcount')}
+<div class="list">{"".join(secs)}</div></section></div>
+<script>
+filterList('vq', 'vcount', '.vsec', '个村');
+</script>'''
+    w('villages.html', page('村庄索引｜恩平冯氏族谱', body, '按村名查找原书收录的房支，查看对应谱页。', 'villages', url='/villages.html'))
+
+    # ---------- buy ----------
+    body = '''<div class="wrap"><section class="block"><h1>购买《恩平冯氏族谱》</h1>
+<div class="kv">
+<div>本站供宗亲免费在线查阅全书图片。</div>
+<div>如需购买全书电子版（PDF 全本），请加微信联系：</div>
+<div style="font-size:22px;color:#742f32;font-weight:700;margin:10px 0">微信：hola24</div>
+<div>加微信时请注明来意（例如：购买恩平冯氏族谱），以便通过。</div>
+</div></section></div>'''
+    w('buy.html', page('购买联系｜恩平冯氏族谱', body, '《恩平冯氏族谱》全书电子版的购买联系信息。', 'buy', url='/buy.html'))
+
+    # ---------- reader ----------
+    branch_js = [{
+        'id': b['id'], 't': b['t'], 'from': NUMERIC_LOOKUP[b['p']],
+        'to': NUMERIC_LOOKUP[b.get('end') or b['p']],
+    } for b in branches]
+    reader_data = json.dumps({
+        'pages': PAGES, 'numeric': NUMERIC_LOOKUP, 'branches': branch_js, 'start': NUMERIC_LOOKUP[1],
+    }, ensure_ascii=False, separators=(',', ':')).replace('<', r'\u003c')
+    sections = ''.join(f'<a href="{reader_url(scan)}">{esc(name)}</a>' for name, scan in SECTION_LINKS)
+    body = f'''
+<div class="wrap">
+<nav class="edition-sheet-nav" aria-label="原书分区">{sections}</nav>
+{reader_toolbar('/toc.html', '返回目录', BOOK_MAX, page_label='原书页码')}
+<div class="readerwrap">
+<button id="singlePage" class="reader-image" type="button" aria-label="放大当前谱页"><img class="pageimg" id="pg" alt="族谱原书页"></button>
+<div id="scrollView" style="display:none"></div>
+<div class="pagenav"><a id="prev" href="#">← 上一页</a><a id="next" href="#">下一页 →</a></div>
+</div>
+</div>
+{image_dialog(edition=False)}
+<script id="originalReaderData" type="application/json">{reader_data}</script>
+<script src="/assets/reader-controls.js?v=1" defer></script>
+<script src="/assets/original-reader.js?v=1" defer></script>'''
+    w('reader.html', page('看原书｜恩平冯氏族谱', body, '逐页阅读《恩平冯氏族谱》1995 年重修版原书影像。', 'toc', url='/reader.html', index=False))
+
+    # ---------- about ----------
+    about = f'''<div class="wrap">
+<section class="block about-content">
+<h1>关于本站</h1>
+<p>恩平冯氏族谱在线查阅站方便宗亲从村名、房支或书页码找谱。查找恩平族谱、恩平宗谱或恩平家谱时，可先核对自己要找的村名和房支，再选择原书或村庄更新资料。</p>
+<h2>1995 年重修版从哪里来</h2>
+<p>本站的全书目录、房支、村庄记录和原书影像，以《恩平冯氏族谱》1995 年重修版为底本。按原谱序记载，恩平冯氏修谱筹备委员会于 1992 年成立，组织编纂小组开展修谱工作，历时近三年，于 1995 年脱稿付梓。<a href="/reader.html?p=4">查看原谱卷首第 4 页</a>。</p>
+<p>原书正文共 1,269 页，分为源流及现状、世系、人物业绩和文献文物四章。世系章载有复春系、宁邦房、万辅祖等宗系及下辖房支。</p>
+<h2>怎样找 1995 年原书</h2>
+<ul>
+<li><strong>知道村名。</strong>打开<a href="/villages.html">村庄索引</a>，查该村在原书中涉及的房支，再打开对应谱页。同一个村可能对应多个房支。</li>
+<li><strong>知道房支或章节。</strong>打开<a href="/toc.html">全书目录</a>，选择要找的章节或房支，按原书顺序查阅。</li>
+<li><strong>知道原书页码。</strong>在<a href="/">首页搜索框</a>输入纸本上印的页码，点击「搜索」直达该页。</li>
+</ul>
+<h2>怎样查村庄更新资料</h2>
+<p>各村后续增修的族谱按村庄、房支和年份整理，在<a href="{INDEX}">村庄更新资料</a>集中查阅。小湴村凝斋房 2026 版是这一房的更新资料，原书中的小湴村和凝斋房记录也可照常查阅。</p>
+<p>打开<a href="{INDEX}v000100/">小湴村更新资料</a>，进入凝斋房 2026 版，输入姓名或人物编号。遇到同名人物时，可先核对世次，再从人物页查看祖先、后代关系与对应谱页。需要对照原谱照片时，可在档案页底部进入「原谱档案」，里面也列有已公开的修改记录。</p>
+<h2>怎样反馈更正或补充资料</h2>
+<p>请注明村名、房支和版本，附原书页码或新版谱页编号。若涉及人物，最好加上人物编号、建议更正的内容和相关出处。照片或其他资料请说明来源和可公开的范围。联系渠道见<a href="https://fengshizupu.com/about/">冯氏族谱主站的「关于」页</a>。</p>
+</section></div>'''
+    w('about/index.html', page('关于本站｜恩平冯氏族谱', about,
+                              '了解恩平冯氏族谱在线查阅站、1995 年重修版的来源、村庄更新资料及更正方式。', url='/about/'))
+
+    # ---------- 404 ----------
+    w('404.html', page('没有这一页', '<div class="wrap"><section class="block"><h2>没有这一页</h2><p>回到<a href="/">首页</a>重新查找。</p></section></div>', '返回恩平冯氏族谱首页重新查找。', index=False))
+
+    # ---------- sitemap ----------
+    urls = ['/', '/toc.html', '/villages.html', '/buy.html', '/about/'] + [f'/branch/{b["id"]}.html' for b in branches] + edition_urls
+    sm = '<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n' + \
+         ''.join(f'<url><loc>{esc(ORIGIN + u)}</loc></url>\n' for u in urls) + '</urlset>'
+    with open(os.path.join(SITE, 'sitemap.xml'), 'w', encoding='utf-8') as f:
+        f.write(sm)
+    with open(os.path.join(SITE, 'robots.txt'), 'w', encoding='utf-8') as f:
+        f.write(f'User-agent: *\nAllow: /\nSitemap: {ORIGIN}/sitemap.xml\n')
+    print('generated:', len(urls), 'urls,', len(branches), 'branches,', len(villages), 'villages')
+
+def w(name, content):
+    path = os.path.join(SITE, name)
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    with open(path, 'w', encoding='utf-8') as f:
+        f.write(content)
+
+if __name__ == '__main__':
+    build(load_data())
+, e['t'].strip())
+        css = ' class="grp"' if heading else ''
         key = esc(e['t'] + ' ' + lab + (f' {e["p"]}' if e.get('p') else ''))
         rows.append(entry(reader_url(href), e['t'], lab, f'{css} data-q="{key}"'))
     body = f'''<div class="wrap"><section class="block"><h1>全书目录</h1>
