@@ -96,7 +96,7 @@ def head(title, desc, url, index):
 <link rel="icon" type="image/svg+xml" href="/favicon.svg">
 <link rel="stylesheet" href="/assets/style.css?v=shared-theme-1">
 <link rel="stylesheet" href="/assets/genealogy-theme.css?v={THEME_VERSION}">
-<script src="/assets/site.js"></script>
+<script src="/assets/site.js?v=2"></script>
 </head>
 <body class="site-theme">'''
 
@@ -172,6 +172,14 @@ def build(data):
         for b in bs:
             branch_villages.setdefault(b['id'], []).append(name)
 
+    village_aliases = {}
+    for edition in edition_results:
+        village = edition['bookVillage']
+        village_aliases.setdefault(village, set()).update(edition['aliases'])
+
+    def alias_keys(names):
+        return ' '.join(sorted({alias for name in names for alias in village_aliases.get(name, ())}))
+
     # ---------- index ----------
     def page_result(title, scan, key=''):
         return {'t': title, 'k': key, 'url': reader_url(scan), 'detail': label_for_pdf(scan)}
@@ -182,15 +190,15 @@ def build(data):
             search_data.append(page_result(item['t'], scan))
     for branch in branches:
         names = branch_villages.get(branch['id'], [])
-        aliases = ' 小滘 小滘村' if any('小湴' in name for name in names) else ''
+        aliases = alias_keys(names)
         search_data.append({
-            't': branch['t'], 'k': ' '.join(names) + aliases,
+            't': branch['t'], 'k': ' '.join([*names, aliases]),
             'url': f'/branch/{branch["id"]}.html',
             'detail': f'{branch.get("zu", "")} {branch.get("fang", "")} · {label_for_pdf(NUMERIC_LOOKUP[branch["p"]])}',
         })
     for name, refs in villages.items():
         search_data.append({
-            't': name, 'k': '小滘 小滘村' if '小湴' in name else '',
+            't': name, 'k': alias_keys([name]),
             'url': f'/villages.html#{quote(name)}',
             'detail': '村庄 · ' + label_for_pdf(NUMERIC_LOOKUP[refs[0]['p']]),
         })
@@ -198,8 +206,20 @@ def build(data):
         search_data.append(page_result(section, scan))
     for scan in (3, 1299, 1300):
         search_data.append(page_result(label_for_pdf(scan), scan))
+    scoped_pages = {}
+    section_ordinals = {}
+    for original in PAGES[1:]:
+        section = original['section']
+        section_ordinals[section] = section_ordinals.get(section, 0) + 1
+        if section == '卷首':
+            scoped_pages.setdefault(section, {})[section_ordinals[section]] = page_result(
+                f"卷首第 {section_ordinals[section]} 张", original['scan'], original['label'])
+        elif section.startswith('目录'):
+            scoped_pages.setdefault(section, {})[original['printed']] = page_result(
+                original['label'], original['scan'])
     homepage_index = publish_index(w, 'assets/search-index.json', {
         'original': search_data, 'editions': edition_results, 'people': person_indexes,
+        'scopedPages': scoped_pages,
         'numeric': {number: page_result(label_for_pdf(scan), scan) for number, scan in NUMERIC_LOOKUP.items()},
     })
     zu_cards = ''
@@ -269,15 +289,15 @@ def build(data):
         title = e['t'].strip()
         heading = re.match(r'^第[一二三四五六七八九十百零〇0-9]+[章节]', title) or re.fullmatch(r'附篇[：:]?', title)
         css = ' class="grp"' if heading else ''
-        key = esc(e['t'] + ' ' + lab + (f' {e["p"]}' if e.get('p') else ''))
+        related = branch_villages.get(e.get('id'), [])
+        if not related:
+            related = [name for name in village_aliases if name in title]
+        key = esc(' '.join([title, lab, *related, alias_keys(related)]))
         rows.append(entry(reader_url(href), e['t'], lab, f'{css} data-q="{key}"'))
     body = f'''<div class="wrap"><section class="block"><h1>全书目录</h1>
 <p class="note">依原书目录逐条录入。点任意一条，直接翻到原书那一页。</p>
-{search_box('tq', '输入条目、村名或书页码', 'tcount')}
-<div class="list" id="toclist">{"".join(rows)}</div></section></div>
-<script>
-filterList('tq', 'tcount', '#toclist > a', '条');
-</script>'''
+{indexed_search(homepage_index, toc=True)}
+<div class="list" id="toclist">{"".join(rows)}</div></section></div>'''
     w('toc.html', page('全书目录｜恩平冯氏族谱', body, '查看《恩平冯氏族谱》全书目录，按章节和房支直达原书页。', 'toc', url='/toc.html'))
 
     # ---------- branch pages ----------
@@ -314,8 +334,7 @@ filterList('tq', 'tcount', '#toclist > a', '条');
             entry(f'/branch/{b["id"]}.html', b['t'], f'书第{b["p"]}页')
             for b in bs)
         q = v + ' ' + ' '.join(b['t'] for b in bs)
-        if '小湴' in v:
-            q += ' 小滘 小滘村'
+        q += ' ' + alias_keys([v])
         fresh = ''.join(
             f' <a class="fresh" href="{edition_path(e)}">{esc(edition_title(e))}</a>'
             for e in updates_by_book_village.get(v, []))
@@ -377,7 +396,7 @@ filterList('vq', 'vcount', '.vsec', '个村');
 <ul>
 <li><strong>知道村名。</strong>打开<a href="/villages.html">村庄索引</a>，查该村在原书中涉及的房支，再打开对应谱页。同一个村可能对应多个房支。</li>
 <li><strong>知道房支或章节。</strong>打开<a href="/toc.html">全书目录</a>，选择要找的章节或房支，按原书顺序查阅。</li>
-<li><strong>知道原书页码。</strong>在<a href="/">首页搜索框</a>输入纸本上印的页码，点击「搜索」直达该页。</li>
+<li><strong>知道原书页码。</strong>在<a href="/">首页搜索框</a>输入纸本页码，再从结果中选择原书或相应的新谱。</li>
 </ul>
 <h2>怎样查村庄更新资料</h2>
 <p>各村后续增修的族谱按村庄、房支和年份整理，在<a href="{INDEX}">村庄更新资料</a>集中查阅。小湴村凝斋房 2026 版是这一房的更新资料，原书中的小湴村和凝斋房记录也可照常查阅。</p>

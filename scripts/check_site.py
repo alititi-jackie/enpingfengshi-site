@@ -62,8 +62,13 @@ def check_site(*, require_scans=True):
             links[link].add(path)
     home_index = ROOT / 'assets/search-index.json'
     search = json.loads(home_index.read_text(encoding='utf-8'))
-    for row in [*search['original'], *search['editions'], *search['numeric'].values()]:
+    scoped_pages = [row for section in search['scopedPages'].values() for row in section.values()]
+    for row in [*search['original'], *search['editions'], *search['numeric'].values(), *scoped_pages]:
         links[row['url']].add(home_index)
+    for edition in search['editions']:
+        index = local_target(urlsplit(edition['pageIndex']).path)
+        for row in json.loads(index.read_text(encoding='utf-8')).values():
+            links[row['url']].add(index)
     for index_url in search['people']:
         index = local_target(urlsplit(index_url).path)
         for row in json.loads(index.read_text(encoding='utf-8')):

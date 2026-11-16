@@ -19,10 +19,33 @@ const edition = '/editions/v000100/2026/a000100/';
       await page.locator('#searchResults a[href^="/branch/"]').first().waitFor();
       await page.locator('#q').fill('p1');
       await page.locator('#searchResults a[href="' + edition + 'persons/p000001/"]').waitFor();
-      await page.locator('#q').fill('729');
-      await page.locator('#q').press('Enter');
-      await page.waitForURL('**/reader.html?p=759');
+      const homeSearch = page.locator('#q');
+      await homeSearch.fill('１２');
+      await homeSearch.press('Enter');
+      const homeResults = page.locator('#searchResults a');
+      await homeResults.nth(1).waitFor();
+      assert.deepEqual(await homeResults.evaluateAll(links => links.map(link => link.getAttribute('href'))),
+        ['/reader.html?p=42', edition + 'pages/pg000012/']);
+      for (const [query, target] of [
+        ['小湴 12页', edition + 'pages/pg000012/'],
+        ['目录前组 12', '/reader.html?p=29'],
+        ['卷首第 12 张', '/reader.html?p=12'],
+      ]) {
+        await homeSearch.fill(query);
+        await page.locator('#searchResults a[href="' + target + '"]').waitFor();
+        assert.equal(await homeResults.count(), 1);
+      }
+      await page.goto(origin + '/?q=729');
+      await page.locator('#searchResults a[href="/reader.html?p=759"]').click();
       await page.locator('#info').getByText('原书第 729 页').waitFor();
+
+      await page.goto(origin + '/toc.html');
+      const tocSearch = page.locator('#tq');
+      await tocSearch.fill('第12页');
+      await page.locator('#searchResults a[href="/reader.html?p=42"]').waitFor();
+      await tocSearch.fill('小滘');
+      await page.locator('#toclist a:visible').first().waitFor();
+      assert.match(await page.locator('#toclist a:visible').first().innerText(), /小湴/);
 
       await page.goto(origin + '/reader.html?p=1300');
       await page.locator('#info').getByText('汉字繁简对照表（续）').waitFor();

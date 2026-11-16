@@ -70,7 +70,8 @@ def build_editions(root, site, page, write, entry, old_villages, reader_toolbar)
         village = edition['village']
         keys = ' '.join([edition['town'], village, edition['branch'], *edition['aliases']])
         search_entries.append({'t': title, 'k': keys, 'kind': 'edition', 'url': base,
-                               'detail': edition['source']})
+                               'detail': edition['source'], 'bookVillage': edition.get('bookVillage'),
+                               'aliases': edition['aliases']})
 
         folder = Path(root) / base.strip('/')
         data = folder / 'data'
@@ -168,6 +169,7 @@ def build_editions(root, site, page, write, entry, old_villages, reader_toolbar)
             } for item in pages
         }
         page_index = publish_index(write, f'{base.lstrip("/")}page-index.json', page_rows)
+        search_entries[-1]['pageIndex'] = page_index
         inline_search = indexed_search(index_url, page_index=page_index)
         rendered = []
         for position, item in enumerate(pages):

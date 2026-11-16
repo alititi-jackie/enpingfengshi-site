@@ -1,4 +1,5 @@
-const normalizeQuery = (value) => value.normalize('NFKC').replaceAll('馮', '冯').trim().toLowerCase();
+const normalizeQuery = (value) => value.normalize('NFKC').replaceAll('馮', '冯').trim().toLowerCase().replace(/\s+/g, ' ');
+const matchesSearch = (keys, term) => term.split(' ').every(word => keys.includes(word));
 const readerURL = (page) => '/reader.html?p=' + page;
 
 function filterList(id, statusId, selector, unit, showUnfiltered = true) {
@@ -9,7 +10,7 @@ function filterList(id, statusId, selector, unit, showUnfiltered = true) {
     const term = normalizeQuery(input.value);
     let count = 0;
     for (const [row, keys] of rows) {
-      const visible = term ? keys.includes(term) : showUnfiltered;
+      const visible = term ? matchesSearch(keys, term) : showUnfiltered;
       row.style.display = visible ? '' : 'none';
       if (visible) count++;
     }
