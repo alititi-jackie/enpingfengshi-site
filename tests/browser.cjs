@@ -45,8 +45,23 @@ const edition = '/editions/v000100/2026/a000100/';
       await page.locator('#editionName').fill('p1');
       await page.locator('#editionSearchResults a[href="' + edition + 'persons/p000001/"]').waitFor();
       await page.goto(origin + edition);
-      await page.locator('#editionName').fill('15');
-      await page.locator('#editionSearchResults a[href="' + edition + 'pages/pg000015/"]').waitFor();
+      const searchInput = page.locator('#editionName');
+      const results = page.locator('#editionSearchResults a');
+      const targets = () => results.evaluateAll(links => links.map(link => link.getAttribute('href')));
+      const sheet15 = edition + 'pages/pg000015/';
+      const person15 = edition + 'persons/p000015/';
+      await searchInput.fill('15');
+      await results.nth(1).waitFor();
+      assert.deepEqual(await targets(), [sheet15, person15]);
+      assert.match(await results.nth(1).innerText(), /人物.*冯世达.*p000015/s);
+      await searchInput.press('Enter');
+      await results.nth(1).waitFor();
+      assert.deepEqual(await targets(), [sheet15, person15]);
+      for (const [query, target] of [['第15页', sheet15], ['15页', sheet15], ['p15', person15]]) {
+        await searchInput.fill(query);
+        await page.getByText('找到 1 条相关记录', { exact: true }).waitFor();
+        assert.deepEqual(await targets(), [target]);
+      }
       await page.locator('#editionName').fill('冯杜泮');
       await page.locator('#editionSearchResults a[href="' + edition + 'persons/p001069/"]').waitFor();
       assert.equal(await page.locator('#editionSearchResults a').count(), 1);

@@ -28,4 +28,4 @@ def indexed_search(index_url, *, home=False, browse=False, page_index=None):
         f'<button type="submit"{button}>搜索</button></form>{all_button}'
         '<div id="searchStatus" class="vcount" role="status"></div>'
         f'<div id="{results}" class="list"></div>'
-        '<script defer src="/assets/search.js?v=2"></script>')
+        '<script defer src="/assets/search.js?v=3"></script>')

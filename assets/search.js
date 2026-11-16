@@ -70,11 +70,18 @@ for (const form of document.querySelectorAll('[data-search-index]')) {
           const pages = await requestIndex(form.dataset.pageIndex);
           if (current !== revision) return;
           const match = pages[Number(pageNumber[1])];
-          status.textContent = match ? '' : '暂未找到这个谱页页码。';
-          if (match) appendSearchResult(box, match);
-          return;
+          hits = match ? [match] : [];
+          if (term === pageNumber[1]) {
+            const people = findPeople(data, 'p' + term);
+            hits.push(...people.map(person => ({
+              ...person,
+              t: '人物 · ' + person.t,
+              detail: person.id + ' · ' + person.detail,
+            })));
+          }
+        } else {
+          hits = all ? data : findPeople(data, form.dataset.pageIndex || !/^\d+$/.test(term) ? term : 'p' + term);
         }
-        hits = all ? data : findPeople(data, form.dataset.pageIndex || !/^\d+$/.test(term) ? term : 'p' + term);
       }
       const limit = all || isHome ? hits.length : 50;
       status.textContent = hits.length
