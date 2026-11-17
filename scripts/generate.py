@@ -101,13 +101,13 @@ def head(title, desc, url, index):
 <body class="site-theme">'''
 
 def header(active=''):
-    links = [('首页', '/', 'home'), ('目录', '/toc.html', 'toc'), ('村庄', '/villages.html', 'villages'),
-             ('新谱', INDEX, 'editions'), ('资讯', 'https://fengshizupu.com/news/', 'news'), ('主站', 'https://fengshizupu.com', 'main')]
+    links = [('首页', 'https://fengshizupu.com/', 'main'), ('资讯', 'https://fengshizupu.com/news/', 'news'),
+             ('族谱', 'https://fengshizupu.com/archives/', 'archives'), ('恩平', '/', 'home'),
+             ('目录', '/toc.html', 'toc'), ('新谱', INDEX, 'editions')]
     parts = []
     for t, u, k in links:
         cls = ' class="on"' if k == active else ''
-        external = ' target="_blank" rel="noopener"' if k == 'news' else ''
-        parts.append(f'<a href="{u}"{cls}{external}>{t}</a>')
+        parts.append(f'<a href="{u}"{cls}>{t}</a>')
     nav = ''.join(parts) + '<button class="share" type="button" onclick="sharePage()">分享</button>'
     return f'''<header class="brandbar"><div class="wrap">
 <a class="brand" href="/"><img src="/assets/icon.svg" alt="冯" width="46" height="46"><span>恩平冯氏族谱<small>enping.fengshizupu.com</small></span></a>
@@ -296,6 +296,7 @@ def build(data):
         rows.append(entry(reader_url(href), e['t'], lab, f'{css} data-q="{key}"'))
     body = f'''<div class="wrap"><section class="block"><h1>全书目录</h1>
 <p class="note">依原书目录逐条录入。点任意一条，直接翻到原书那一页。</p>
+<p class="note">知道村名？打开<a href="/villages.html">村庄索引 ›</a>，按村名查该村在原书中涉及的房支，再打开对应谱页。</p>
 {indexed_search(homepage_index, toc=True)}
 <div class="list" id="toclist">{"".join(rows)}</div></section></div>'''
     w('toc.html', page('全书目录｜恩平冯氏族谱', body, '查看《恩平冯氏族谱》全书目录，按章节和房支直达原书页。', 'toc', url='/toc.html'))
@@ -313,7 +314,7 @@ def build(data):
         if next_b:
             nav += f'<a class="btn ghost" href="/branch/{next_b["id"]}.html">下一支系 →</a>'
         nav += '</div>'
-        body = f'''<div class="wrap"><nav class="crumb" aria-label="面包屑"><a href="/">首页</a> / <a href="/toc.html">全书目录</a> / <span aria-current="page">{esc(b['t'])}</span></nav><section class="block"><h1>{esc(b['t'])}</h1>
+        body = f'''<div class="wrap"><nav class="crumb" aria-label="面包屑"><a href="/">恩平</a> / <a href="/toc.html">全书目录</a> / <span aria-current="page">{esc(b['t'])}</span></nav><section class="block"><h1>{esc(b['t'])}</h1>
 <div class="kv">
 <div><span class="k">所属宗系</span>{esc(b.get('zu',''))}</div>
 <div><span class="k">所属房</span>{esc(b.get('fang',''))}</div>
@@ -347,7 +348,7 @@ def build(data):
 <script>
 filterList('vq', 'vcount', '.vsec', '个村');
 </script>'''
-    w('villages.html', page('村庄索引｜恩平冯氏族谱', body, '按村名查找原书收录的房支，查看对应谱页。', 'villages', url='/villages.html'))
+    w('villages.html', page('村庄索引｜恩平冯氏族谱', body, '按村名查找原书收录的房支，查看对应谱页。', 'toc', url='/villages.html'))
 
     # ---------- buy ----------
     body = '''<div class="wrap"><section class="block"><h1>购买《恩平冯氏族谱》</h1>
@@ -408,7 +409,7 @@ filterList('vq', 'vcount', '.vsec', '个村');
                               '了解恩平冯氏族谱在线查阅站、1995 年重修版的来源、村庄更新资料及更正方式。', url='/about/'))
 
     # ---------- 404 ----------
-    w('404.html', page('没有这一页', '<div class="wrap"><section class="block"><h2>没有这一页</h2><p>回到<a href="/">首页</a>重新查找。</p></section></div>', '返回恩平冯氏族谱首页重新查找。', index=False))
+    w('404.html', page('没有这一页', '<div class="wrap"><section class="block"><h2>没有这一页</h2><p>回到<a href="/">恩平首页</a>重新查找。</p></section></div>', '返回恩平冯氏族谱首页重新查找。', index=False))
 
     # ---------- sitemap ----------
     urls = ['/', '/toc.html', '/villages.html', '/buy.html', '/about/'] + [f'/branch/{b["id"]}.html' for b in branches] + edition_urls
