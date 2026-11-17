@@ -122,3 +122,5 @@
 .site-theme .edition-inline-people a:not([style]) {display:none}
 .site-theme .edition-sheet-nav {display:flex;gap:16px;flex-wrap:wrap;margin:16px 0}
 .site-theme .edition-sheet-nav a {text-decoration:underline}
+
+.pageimg{margin:0 0 22px}
