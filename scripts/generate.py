@@ -114,7 +114,7 @@ def header(active=''):
 </div></header>
 <nav class="mainnav"><div class="wrap mainnav-in">{nav}</div></nav>'''
 
-FOOT = '''<footer class="site site-footer"><a href="https://fengshizupu.com/contribute/">宗亲投稿 · 提供资料</a><br>
+FOOT = '''<footer class="site site-footer"><a href="https://fengshizupu.com/contribute/">宗亲投稿 · 宗亲共建</a><br>
 恩平冯氏族谱 · 在线查阅<br>
 <strong>本站原书版本 ·《恩平冯氏族谱》1995 年重修版</strong> · <a href="/buy.html">购买电子版</a><br>
 全国数字族谱平台 · <a href="https://fengshizupu.com/">fengshizupu.com</a> · <a href="/about/">关于本站</a>
