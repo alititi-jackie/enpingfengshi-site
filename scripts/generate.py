@@ -342,6 +342,7 @@ def build(data):
         q += ' ' + ' '.join(edition_title(e) for e in updates_by_book_village.get(v, []))
         secs.append(f'<div class="vsec" data-q="{esc(q)}"><div class="grp" id="{esc(v)}">{esc(v)}（{len(bs)} 个支系）{fresh}</div>{links}</div>')
     body = f'''<div class="wrap"><section class="block"><h1>村庄索引</h1>
+<p><a class="btn" href="/toc.html">查看目录 ›</a></p>
 <p class="note">按原书世系目录标题中出现的村名整理：同一个村可能有多个房支，同一房支也可能分布在多个村。点村名看该村涉及的支系。</p>
 {search_box('vq', '输入村名或支系名', 'vcount')}
 <div class="list">{"".join(secs)}</div></section></div>
