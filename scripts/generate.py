@@ -295,8 +295,8 @@ def build(data):
         key = esc(' '.join([title, lab, *related, alias_keys(related)]))
         rows.append(entry(reader_url(href), e['t'], lab, f'{css} data-q="{key}"'))
     body = f'''<div class="wrap"><section class="block"><h1>全书目录</h1>
+<p><a class="btn" href="/villages.html">查看村庄 ›</a></p>
 <p class="note">依原书目录逐条录入。点任意一条，直接翻到原书那一页。</p>
-<p class="note">知道村名？打开<a href="/villages.html">村庄索引 ›</a>，按村名查该村在原书中涉及的房支，再打开对应谱页。</p>
 {indexed_search(homepage_index, toc=True)}
 <div class="list" id="toclist">{"".join(rows)}</div></section></div>'''
     w('toc.html', page('全书目录｜恩平冯氏族谱', body, '查看《恩平冯氏族谱》全书目录，按章节和房支直达原书页。', 'toc', url='/toc.html'))
