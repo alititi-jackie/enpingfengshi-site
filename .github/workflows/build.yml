@@ -3,6 +3,7 @@ name: Build and deploy site
 on:
   push:
     branches: [main]
+  pull_request:
   workflow_dispatch:
 
 permissions:
@@ -11,7 +12,7 @@ permissions:
   id-token: write
 
 concurrency:
-  group: pages
+  group: pages-${{ github.ref }}
   cancel-in-progress: false
 
 jobs:
@@ -19,6 +20,8 @@ jobs:
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
+      - name: Verify shared UI release
+        run: python3 scripts/check_family.py
       - name: Generate site
         run: python3 scripts/generate.py
 
@@ -75,3 +78,4 @@ jobs:
           path: site
 
       - uses: actions/deploy-pages@v4
+        if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'

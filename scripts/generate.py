@@ -13,6 +13,7 @@ from hashlib import sha256
 from urllib.parse import quote
 from book_pagination import load_pagination
 from search_markup import indexed_search, publish_index
+from family_ui import reader_toolbar, FAB as SHARED_FAB, FAB_SCRIPT, asset_version
 from village_editions import INDEX, build_editions, edition_path, edition_title, image_dialog
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -35,24 +36,6 @@ def search_box(field, hint, count=None):
     status = f'<div class="vcount" id="{count}" role="status"></div>' if count else ''
     button = '' if count else '<button id="go" type="button">搜索</button>'
     return f'<div class="searchbox"><input id="{field}" type="text" placeholder="{esc(hint)}" aria-label="{esc(hint)}" autocomplete="off">{button}</div>{status}'
-
-def reader_toolbar(back_url, back_label, maximum, *, page_label='页码', edition=False):
-    extra_class = ' edition-readerbar' if edition else ''
-    info = f'<b>1</b>/{maximum}<span class="full-only"> · 封面</span>' if edition else ''
-    branch_info = '' if edition else '<span class="info" id="branchInfo"></span>'
-    expanded = ' aria-expanded="false"' if edition else ''
-    selected = ' class="on" aria-pressed="true"' if edition else ''
-    return f'''<div class="readerbar{extra_class}">
-<a class="nav" href="{esc(back_url)}">{esc(back_label)}</a>
-<span class="info" id="info" aria-live="polite">{info}</span>
-{branch_info}
-<span class="reader-spacer"></span>
-<span class="modes"><button id="mSingle" type="button">单页</button><button id="mScroll" type="button"{selected}>连看</button></span>
-<button id="jumpToggle" type="button"{expanded}>跳页</button>
-<label class="info jumpctl">{esc(page_label)} <input id="jump" type="number" min="1" max="{maximum}"></label>
-<button class="primary" id="jumpBtn">跳页</button>
-</div>
-'''
 
 
 def entry(href, title, detail, attributes=''):
@@ -94,7 +77,7 @@ def head(title, desc, url, index):
 <meta name="twitter:description" content="{esc(desc)}">
 <meta name="twitter:image" content="{ORIGIN}/assets/share-logo.png">
 <link rel="icon" type="image/svg+xml" href="/favicon.svg">
-<link rel="stylesheet" href="/assets/style.css?v=shared-theme-1">
+<link rel="stylesheet" href="/assets/style.css?v={asset_version(ROOT, 'style.css')}">
 <link rel="stylesheet" href="/assets/genealogy-theme.css?v={THEME_VERSION}">
 <script src="/assets/site.js?v=2"></script>
 </head>
@@ -121,17 +104,7 @@ FOOT = '''<footer class="site site-footer"><a href="https://fengshizupu.com/cont
 </footer>
 </body></html>'''
 
-FAB = '''<div class="fab"><button id="fabTop" type="button" title="回到顶部" aria-label="回到顶部">↑</button><button id="fabBack" type="button" title="返回" aria-label="返回" onclick="history.back()">←</button></div>
-<script>
-var ft = document.getElementById('fabTop');
-function fabShow(){ ft.classList.toggle('on', window.scrollY > 900); }
-window.addEventListener('scroll', fabShow, {passive: true}); fabShow();
-ft.onclick = function(){ window.scrollTo({top: 0, behavior: 'smooth'}); };
-function sharePage(){ var u = location.href, t = document.title;
-  var description = document.querySelector('meta[name="description"]').content;
-  if (navigator.share) { navigator.share({title: t, text: description, url: u}).catch(function(){}); }
-  else if (navigator.clipboard) { navigator.clipboard.writeText(u).then(function(){ alert('链接已复制'); }); } }
-</script>'''
+FAB = SHARED_FAB + FAB_SCRIPT
 
 def page(title, body, desc, active='', *, url=None, index=True):
     return head(title, desc, url, index) + header(active) + body + FAB + FOOT

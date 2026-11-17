@@ -1,5 +1,6 @@
 """Publish independently maintained editions alongside the original Enping book."""
 from collections import defaultdict
+from family_ui import image_dialog as shared_image_dialog
 from hashlib import file_digest
 from html import escape
 import json
@@ -37,10 +38,7 @@ def image_button(src, label, *, eager=False, dimensions=None):
 
 
 def image_dialog(edition=True):
-    markup = '''<dialog id="imageDialog" class="image-dialog" aria-labelledby="imageLabel">
-<div class="image-toolbar"><span id="imageLabel"></span><button type="button" id="imageZoom">放大查看</button><button type="button" id="imageClose">关闭</button></div>
-<div class="image-viewport"><img id="imageLarge" alt=""></div>
-</dialog>'''
+    markup = shared_image_dialog()
     if not edition:
         return markup
     return markup + ('<script src="/assets/reader-controls.js?v=1" defer></script>'
