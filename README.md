@@ -35,3 +35,7 @@ python3 scripts/check_site.py --without-scans
 ## 两站共用样式
 
 `assets/genealogy-theme.css` 与主站 `public/assets/genealogy-theme.css` 同步。公共字号、配色、容器、搜索、阅读和页脚从主站样式源更新，再将同一份复制到本仓库。构建会为共享样式添加内容版本号。
+
+## 公共组件现行维护
+
+以 [FAMILY_UI.md](FAMILY_UI.md) 为准。公共文件由主站固定版本同步，构建会校验哈希；不要在本站直接改共享主题、阅读控制或公共模板。zp 站点差异由 `data/site.json` 配置。

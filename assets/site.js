@@ -36,7 +36,7 @@ function bindImageDialog() {
     open(src, label) {
       caption.textContent = label;
       image.src = src;
-      image.alt = '《恩平冯氏族谱》' + label;
+      image.alt = label;
       image.classList.remove('zoomed');
       zoom.textContent = '放大查看';
       dialog.showModal();
