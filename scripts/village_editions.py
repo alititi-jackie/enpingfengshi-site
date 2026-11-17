@@ -243,7 +243,7 @@ def build_editions(root, site, page, write, entry, old_villages, reader_toolbar)
             profile_link = f'<p><a href="{village_path(edition)}">查看{escape(village)}资料 →</a></p>'
         publish(base, title,
                 f'{breadcrumb}<section class="block"><h1>{escape(title)}</h1>'
-                f'<p>{escape(edition["source"])}</p>{profile_link}<p>{escape(archive["rights"])}</p>'
+                f'<p>{escape(edition["source"])}</p>{profile_link}<p>{escape(archive["rights"]).replace('「关于」页', '「<a href="/about/">关于</a>」页')}</p>'
                 f'<p class="edition-links"><a href="{base}search/">查姓名</a>'
                 f'<a href="{base}read/">整版阅读</a><a href="{book}" download>下载整版 PDF</a></p>'
                 f'<h2>在本档案中查姓名或谱页</h2>{inline_search}'
