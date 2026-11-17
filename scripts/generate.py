@@ -110,7 +110,7 @@ def header(active=''):
         parts.append(f'<a href="{u}"{cls}>{t}</a>')
     nav = ''.join(parts) + '<button class="share" type="button" onclick="sharePage()">分享</button>'
     return f'''<header class="brandbar"><div class="wrap">
-<a class="brand" href="/"><img src="/assets/icon.svg" alt="冯" width="46" height="46"><span>恩平冯氏族谱<small>enping.fengshizupu.com</small></span></a>
+<a class="brand" href="/"><img src="/assets/icon.svg" alt="冯" width="46" height="46"><span>恩平冯氏族谱<small>fengshizupu.com</small></span></a>
 </div></header>
 <nav class="mainnav"><div class="wrap mainnav-in">{nav}</div></nav>'''
 
